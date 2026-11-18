@@ -1,77 +1,78 @@
-\documentclass[aspectratio=169,10pt]{beamer}
+\documentclass[aspectratio=169,11pt]{beamer}
 
-% --- Font & Tiếng Việt ---
+% ==============================================================================
+% GÓI VĂN BẢN, FONT & ĐỒ HỌA
+% ==============================================================================
 \usepackage{fontspec}
 \usefonttheme{professionalfonts}
-\setmainfont{Times New Roman}
-\setsansfont{Times New Roman}
+\setmainfont{Segoe UI}
+\setsansfont{Segoe UI}
 
-% --- Các gói toán học & đồ họa ---
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{xcolor}
 \usepackage{tikz}
+\usetikzlibrary{shapes.geometric,positioning,calc,arrows.meta}
 \usepackage{microtype}
 \usepackage{caption}
 \usepackage{hyperref}
 
-% --- Cấu hình Beamer Theme ---
-\usetheme{Madrid}
-\useinnertheme{rounded}
-\setbeamertemplate{navigation symbols}{} % Tắt biểu tượng điều hướng thừa
+% ==============================================================================
+% HỆ MÀU SẮC HIỆN ĐẠI (MODERN HIGH-TECH PALETTE)
+% ==============================================================================
+\definecolor{BrandDark}{RGB}{15, 23, 42}       % Slate Dark #0F172A
+\definecolor{BrandBlue}{RGB}{37, 99, 235}      % Electric Blue #2563EB
+\definecolor{BrandIndigo}{RGB}{79, 70, 229}    % Indigo #4F46E5
+\definecolor{BrandEmerald}{RGB}{5, 150, 105}   % Emerald Green #059669
+\definecolor{BrandCrimson}{RGB}{225, 29, 72}   % Crimson Red #E11D48
+\definecolor{BrandAmber}{RGB}{217, 119, 6}     % Amber Gold #D97706
+\definecolor{CardBg}{RGB}{248, 250, 252}       % Card Light Gray #F8FAFC
+\definecolor{CardBorder}{RGB}{226, 232, 240}   % Border #E2E8F0
+\definecolor{MutedText}{RGB}{100, 116, 139}    % Slate 500 #64748B
+\definecolor{PillBg}{RGB}{238, 242, 255}       % Soft Indigo Pill
+\definecolor{RedPillBg}{RGB}{254, 226, 226}    % Soft Red Pill
+\definecolor{GreenPillBg}{RGB}{209, 250, 229}  % Soft Green Pill
 
-% --- Bảng màu chuyên nghiệp (Deep Navy / Slate / Amber Gold) ---
-\definecolor{NavyBlue}{RGB}{20, 50, 95}
-\definecolor{SlateBlue}{RGB}{45, 60, 80}
-\definecolor{AmberGold}{RGB}{210, 130, 20}
-\definecolor{AlertRed}{RGB}{185, 28, 28}
-\definecolor{SuccessGreen}{RGB}{22, 101, 52}
-\definecolor{LightBg}{RGB}{245, 247, 250}
+% Thiết lập cơ bản cho Beamer
+\setbeamertemplate{navigation symbols}{}
+\setbeamercolor{background canvas}{bg=white}
+\setbeamercolor{normal text}{fg=BrandDark}
+\setbeamersize{text margin left=1.0cm,text margin right=1.0cm}
 
-\setbeamercolor{palette primary}{bg=NavyBlue,fg=white}
-\setbeamercolor{palette secondary}{bg=SlateBlue,fg=white}
-\setbeamercolor{palette tertiary}{bg=NavyBlue!85!black,fg=white}
-\setbeamercolor{palette quaternary}{bg=NavyBlue,fg=white}
+% ==============================================================================
+% HEADER & FOOTER TỐI GIẢN, KHÔNG TRÀN TRANG
+% ==============================================================================
+\setbeamertemplate{frametitle}{
+  \vspace{0.4em}
+  \begin{beamercolorbox}[wd=\textwidth,leftskip=0pt,rightskip=0pt]{frametitle}
+    {\fontsize{7.5pt}{9pt}\selectfont \textbf{\color{BrandBlue}\insertsectionhead}\\[2pt]}
+    {\fontsize{14pt}{17pt}\selectfont \textbf{\color{BrandDark}\insertframetitle}}
+  \end{beamercolorbox}
+  \vspace{-0.3em}
+  {\color{CardBorder}\rule{\textwidth}{0.8pt}}
+  \vspace{0.2em}
+}
 
-\setbeamercolor{structure}{fg=NavyBlue}
-\setbeamercolor{titlelike}{parent=palette primary,fg=white}
-\setbeamercolor{frametitle}{bg=NavyBlue,fg=white}
-\setbeamercolor{item}{fg=NavyBlue}
-
-\setbeamercolor{block title}{bg=NavyBlue,fg=white}
-\setbeamercolor{block body}{bg=NavyBlue!7,fg=black}
-\setbeamercolor{block title alerted}{bg=AlertRed,fg=white}
-\setbeamercolor{block body alerted}{bg=AlertRed!7,fg=black}
-\setbeamercolor{block title example}{bg=SuccessGreen,fg=white}
-\setbeamercolor{block body example}{bg=SuccessGreen!7,fg=black}
-
-% Hiệu chỉnh footline của Madrid để gọn đẹp
 \setbeamertemplate{footline}{
-  \leavevmode%
-  \hbox{%
-  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
-    \usebeamerfont{author in head/foot}\textbf{Nhóm Nghiên cứu \& Tái lập}
-  \end{beamercolorbox}%
-  \begin{beamercolorbox}[wd=.416667\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
-    \usebeamerfont{title in head/foot}\textbf{FlashAttention: Theory \& Reproduction}
-  \end{beamercolorbox}%
-  \begin{beamercolorbox}[wd=.25\paperwidth,ht=2.25ex,dp=1ex,right]{date in head/foot}%
-    \usebeamerfont{date in head/foot}Tháng 11/2026 \hspace*{2em}
-    \insertframenumber{} / \inserttotalframenumber\hspace*{2ex} 
-  \end{beamercolorbox}}%
-  \vskip0pt%
+  \ifnum\thepage>1
+    \vspace{-0.6em}
+    \begin{beamercolorbox}[wd=\paperwidth,ht=2.0ex,dp=0.8ex,leftskip=1.0cm,rightskip=1.0cm]{footline}
+      {\fontsize{7pt}{8.5pt}\selectfont \textbf{\color{BrandBlue}FlashAttention} \quad{\color{CardBorder}|}\quad {\color{MutedText}Tối ưu hóa Attention Nhận biết Phần cứng (IO-Awareness)}}
+      \hfill
+      {\fontsize{7.5pt}{9pt}\selectfont \color{MutedText}\textbf{\insertframenumber} / \inserttotalframenumber}
+    \end{beamercolorbox}
+    \vspace{0.25em}
+  \fi
 }
 
 % ==============================================================================
-% THÔNG TIN TIÊU ĐỀ
+% MACROS HỖ TRỢ
 % ==============================================================================
-\title[\textbf{FlashAttention Reproduction}]{\Large \textbf{FlashAttention: Tối ưu hóa Cơ chế Attention Nhận biết Phần cứng (IO-Awareness)}}
-\subtitle{\large \textit{Cơ sở Lý thuyết và Thực nghiệm Tái lập Độc lập trên GPU NVIDIA RTX 3050 Ti}}
-\author[\textbf{Nhóm Tái lập}]{\textbf{Nhóm Nghiên cứu \& Tái lập Hệ thống Tính toán Hiệu năng Cao}}
-\institute[HUST / VNU]{\normalsize Khoa Khoa học và Kỹ thuật Máy tính}
-\date[11/2026]{\textbf{Báo cáo Chuyên đề Khoa học --- Tháng 11 Năm 2026}}
+\newcommand{\pilltag}[2]{
+  \tikz[baseline=-0.6ex]\node[fill=#1, rounded corners=3pt, inner xsep=5pt, inner ysep=2pt, font=\fontsize{7pt}{8.5pt}\selectfont\bfseries]{#2};
+}
 
 \begin{document}
 
@@ -79,486 +80,574 @@
 % SLIDE 1: TRANG TIÊU ĐỀ
 % ------------------------------------------------------------------------------
 \begin{frame}[plain]
-  \titlepage
-  \vspace{-1.2em}
-  \begin{center}
-    \footnotesize
-    \color{SlateBlue}
-    \textbf{Đặc tính cốt lõi:} Nhận biết Phần cứng (IO-Awareness) $\bullet$ Tương đương Tuyệt đối (Exact Attention) $\bullet$ Gia tốc tới 82.75$\times$
-  \end{center}
+  \begin{tikzpicture}[remember picture,overlay]
+    \fill[BrandDark] (current page.north west) rectangle ([xshift=1.2cm]current page.south west);
+    \fill[BrandBlue] ([xshift=1.15cm]current page.north west) rectangle ([xshift=1.25cm]current page.south west);
+    
+    \node[anchor=north west, text width=0.84\paperwidth] at ([xshift=1.8cm, yshift=-1.0cm]current page.north west) {
+      \pilltag{PillBg}{\color{BrandBlue}BÁO CÁO NGHIÊN CỨU \& TÁI LẬP KHOA HỌC}\\[10pt]
+      {\fontsize{22pt}{26pt}\selectfont \textbf{\color{BrandDark}FlashAttention: Cơ chế Attention}}\\[4pt]
+      {\fontsize{18pt}{22pt}\selectfont \textbf{\color{BrandBlue}Nhận biết Phần cứng (IO-Awareness)}}\\[8pt]
+      {\fontsize{10.5pt}{14pt}\selectfont \color{MutedText}Giải pháp đột phá vượt qua bức tường bộ nhớ cho mô hình Transformer ngữ cảnh dài}\\[16pt]
+      
+      \begin{tikzpicture}
+        \node[draw=CardBorder, fill=CardBg, rounded corners=6pt, inner sep=9pt, text width=0.80\paperwidth] {
+          \begin{columns}[T]
+            \begin{column}{0.48\textwidth}
+              {\fontsize{7.5pt}{9pt}\selectfont \color{MutedText}Tác giả bài báo gốc:}\\[2pt]
+              {\fontsize{9pt}{11pt}\selectfont \textbf{\color{BrandDark}Tri Dao, Daniel Y. Fu, Christopher Ré et al.}}\\[1pt]
+              {\fontsize{7.5pt}{9pt}\selectfont \color{MutedText}Đại học Stanford $\bullet$ Hội nghị NeurIPS 2022}
+            \end{column}
+            \begin{column}{0.48\textwidth}
+              {\fontsize{7.5pt}{9pt}\selectfont \color{MutedText}Thực nghiệm tái lập độc lập:}\\[2pt]
+              {\fontsize{9pt}{11pt}\selectfont \textbf{\color{BrandDark}NVIDIA RTX 3050 Ti Laptop GPU (4GB VRAM)}}\\[1pt]
+              {\fontsize{7.5pt}{9pt}\selectfont \color{BrandEmerald}\textbf{Gia tốc 82.75$\times$} $\bullet$ \textbf{Tiết kiệm 43.3$\times$ VRAM}}
+            \end{column}
+          \end{columns}
+        };
+      \end{tikzpicture}
+    };
+  \end{tikzpicture}
 \end{frame}
 
 % ------------------------------------------------------------------------------
-% SLIDE 2: ĐẶT VẤN ĐỀ
+% SLIDE 2: BỨC TƯỜNG BỘ NHỚ (THE MEMORY WALL)
 % ------------------------------------------------------------------------------
-\begin{frame}{1. Đặt Vấn đề: Sự Bùng nổ Ngữ cảnh Dài \& Bức tường Bộ nhớ}
-\begin{columns}[T]
-  \begin{column}{0.48\textwidth}
-    \begin{block}{Nhu cầu Ngữ cảnh Dài (Long-Context)}
-      \begin{itemize}
-        \item Các LLM hiện đại (GPT-4, Claude 3.5, Gemini 1.5) mở rộng cửa sổ ngữ cảnh lên \textbf{128K -- 1M+ tokens}.
-        \item Cần thiết cho: xử lý sách/tài liệu lớn, phân tích toàn bộ kho mã nguồn, suy luận đa bước.
-        \item \textbf{Thách thức cốt tử}: Chi phí tính toán và bộ nhớ của Self-Attention chuẩn tăng theo cấp số nhân:
-        $$\mathcal{O}(N^2) \quad (N \text{ là độ dài chuỗi})$$
-      \end{itemize}
-    \end{block}
-  \end{column}
+\section{ĐẶT VẤN ĐỀ}
+\begin{frame}{Cuộc Khủng hoảng Ngữ cảnh Dài \& Bức tường Bộ nhớ}
+  \vspace{-0.3em}
+  {\fontsize{9.5pt}{12pt}\selectfont \color{MutedText}\textbf{Vấn đề cốt tử}: Năng lực tính toán bùng nổ, nhưng tốc độ truyền tải bộ nhớ giẫm chân tại chỗ.}
+  \vspace{0.4em}
 
-  \begin{column}{0.48\textwidth}
-    \begin{alertblock}{Bức tường Băng thông Bộ nhớ (Memory Wall)}
-      \begin{itemize}
-        \item \textbf{Mất cân bằng phần cứng}:
-          \begin{itemize}
-            \item Năng lực tính toán (FLOPs) tăng $\sim 3.1\times$ mỗi 2 năm.
-            \item Băng thông DRAM/HBM chỉ tăng khiêm tốn $\sim 1.4\times$.
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{tikzpicture}
+        \node[draw=CardBorder, fill=CardBg, rounded corners=6pt, inner sep=8pt, text width=0.94\textwidth] {
+          \pilltag{PillBg}{\color{BrandBlue}XU HƯỚNG MÔ HÌNH}\\
+          \vspace{4pt}
+          \textbf{\fontsize{10pt}{12pt}\selectfont Nhu cầu Ngữ cảnh Dài (Long-Context)}
+          \begin{itemize}\setlength{\itemsep}{3pt}\fontsize{8.5pt}{10.5pt}\selectfont
+            \item LLM hiện đại mở rộng cửa sổ ngữ cảnh lên \textbf{128K -- 1M+ tokens}.
+            \item Phân tích toàn bộ kho mã nguồn, tài liệu tài chính, video đa khung hình.
+            \item \textbf{Cản trở nghiêm trọng}: Chi phí tính toán \& bộ nhớ của Self-Attention chuẩn tăng bậc hai:
+            $$\mathcal{O}(N^2) \quad \text{với } N \text{ là độ dài chuỗi}$$
           \end{itemize}
-        \item \textbf{Nghịch lý Attention}: Không nghẽn bởi phép tính (\textit{Compute-bound}) mà nghẽn nghiêm trọng do nạp/ghi dữ liệu (\textit{Memory-bound})!
-        \item Nhân xử lý GPU (SMs) thường xuyên phải chờ dữ liệu từ bộ nhớ chính HBM.
-      \end{itemize}
-    \end{alertblock}
-  \end{column}
-\end{columns}
+        };
+      \end{tikzpicture}
+    \end{column}
+
+    \begin{column}{0.48\textwidth}
+      \begin{tikzpicture}
+        \node[draw=BrandCrimson!30, fill=RedPillBg!20, rounded corners=6pt, inner sep=8pt, text width=0.94\textwidth] {
+          \pilltag{RedPillBg}{\color{BrandCrimson}NGHẼN PHẦN CỨNG}\\
+          \vspace{4pt}
+          \textbf{\fontsize{10pt}{12pt}\selectfont Bức tường Băng thông (Memory Wall)}
+          \begin{itemize}\setlength{\itemsep}{3pt}\fontsize{8.5pt}{10.5pt}\selectfont
+            \item \textbf{Tốc độ tính toán (FLOPs)}: Tăng trung bình \textbf{+3.1$\times$} mỗi 2 năm.
+            \item \textbf{Băng thông DRAM/HBM}: Chỉ tăng khiêm tốn \textbf{+1.4$\times$} mỗi 2 năm.
+            \item \textbf{Nghịch lý Attention}: Phép tính không nghẽn ở nhân ma trận (Compute-bound), mà nghẽn nghiêm trọng do nạp/ghi dữ liệu liên tục (\textbf{Memory-bound})!
+          \end{itemize}
+        };
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 % ------------------------------------------------------------------------------
-% SLIDE 3: STANDARD ATTENTION & MEMORY HIERARCHY
+% SLIDE 3: GIẢI PHẪU STANDARD ATTENTION
 % ------------------------------------------------------------------------------
-\begin{frame}{2. Standard Attention: Rào cản $O(N^2)$ \& Phân cấp Bộ nhớ GPU}
-\begin{columns}[T]
-  \begin{column}{0.48\textwidth}
-    \begin{block}{Phân cấp Bộ nhớ GPU (Memory Hierarchy)}
-      \begin{itemize}
-        \item \textbf{SRAM (On-chip / Shared Memory)}:
-          \begin{itemize}
-            \item Băng thông siêu tốc: \textbf{$\sim 19$ TB/s} (A100), $\sim 3$ TB/s (RTX 3050 Ti).
-            \item Dung lượng cực nhỏ: chỉ $\sim 100$ KB mỗi SM (tổng $10-50$ MB toàn GPU).
-          \end{itemize}
-        \item \textbf{HBM / DRAM (Global Memory)}:
-          \begin{itemize}
-            \item Dung lượng lớn: $4 - 80$ GB.
-            \item Băng thông chậm hơn \textbf{10 -- 20$\times$}: $\sim 192$ GB/s (RTX 3050 Ti), $\sim 1.5-2$ TB/s (A100).
-          \end{itemize}
-      \end{itemize}
-    \end{block}
-  \end{column}
+\section{KIẾN TRÚC PHẦN CỨNG}
+\begin{frame}{Giải phẫu Điểm nghẽn của Standard Attention}
+  \vspace{-0.3em}
+  {\fontsize{9.5pt}{12pt}\selectfont \color{MutedText}Sự chênh lệch tốc độ 15--20 lần giữa SRAM trên chip và HBM ngoài chip là nguồn gốc của độ trễ.}
+  \vspace{0.3em}
 
-  \begin{column}{0.48\textwidth}
-    \begin{alertblock}{Điểm nghẽn I/O của Standard Attention}
-      Quy trình tuần tự gồm 3 kernel rời rạc qua HBM:
-      \begin{enumerate}
-        \item $S = Q K^T \in \mathbb{R}^{N \times N} \implies$ \textbf{Ghi $S$ ra HBM} ($\Theta(N^2)$ I/O).
-        \item $P = \text{softmax}(S) \implies$ \textbf{Ghi $P$ ra HBM} ($\Theta(N^2)$ I/O).
-        \item $O = P V \in \mathbb{R}^{N \times d} \implies$ \textbf{Ghi $O$ ra HBM} ($\Theta(Nd)$ I/O).
-      \end{enumerate}
-      \textbf{Tổng chi phí HBM I/O}: $\Theta(Nd + N^2)$ \\
-      $\implies$ Khi $N \ge 2048$, $N^2 \gg Nd$, toàn bộ thời gian chạy bị nghẽn bởi băng thông HBM!
-    \end{alertblock}
-  \end{column}
-\end{columns}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{\fontsize{9pt}{11pt}\selectfont Phân cấp Bộ nhớ GPU (Memory Hierarchy)}\\[3pt]
+      \begin{tikzpicture}[font=\fontsize{7.5pt}{9.5pt}\selectfont]
+        \node[draw=BrandEmerald, fill=GreenPillBg, rounded corners=4pt, text width=0.94\textwidth, inner sep=5pt] (sram) {
+          \textbf{\color{BrandEmerald}SRAM (On-chip / Shared Memory)}\\
+          $\bullet$ Băng thông siêu tốc: \textbf{$\sim$19 TB/s} (A100), $\sim$\textbf{3 TB/s} (3050 Ti)\\
+          $\bullet$ Dung lượng siêu nhỏ: chỉ $\sim$\textbf{100 KB -- 192 KB} / SM
+        };
+        \draw[{Latex[length=1.5mm]}-{Latex[length=1.5mm]}, line width=1.2pt, color=BrandCrimson] ([yshift=-1pt]sram.south) -- ++(0,-0.38) 
+          node[midway, right=2pt] {\fontsize{7pt}{8pt}\selectfont \color{BrandCrimson}\textbf{Nghẽn Băng thông (Bottleneck)}};
+        \node[draw=BrandBlue, fill=PillBg, rounded corners=4pt, text width=0.94\textwidth, inner sep=5pt, below=0.38cm of sram] (hbm) {
+          \textbf{\color{BrandBlue}HBM / Global Memory (Off-chip)}\\
+          $\bullet$ Băng thông chậm: $\sim$1.5 TB/s (A100), \textbf{192 GB/s} (3050 Ti)\\
+          $\bullet$ Dung lượng lớn: 4 GB -- 80 GB
+        };
+      \end{tikzpicture}
+    \end{column}
+
+    \begin{column}{0.48\textwidth}
+      \begin{tikzpicture}
+        \node[draw=BrandCrimson!30, fill=CardBg, rounded corners=6pt, inner sep=7pt, text width=0.94\textwidth] {
+          \textbf{\fontsize{9pt}{11pt}\selectfont \color{BrandCrimson}3 Lần Ghi HBM Lãng phí của Standard Attn:}\\[3pt]
+          \fontsize{8pt}{10pt}\selectfont
+          \begin{enumerate}\setlength{\itemsep}{2pt}
+            \item $S = Q K^T \in \mathbb{R}^{N \times N} \implies$ \textbf{Ghi $S$ ra HBM} ($\Theta(N^2)$).
+            \item Nạp lại $S$, tính $P = \text{softmax}(S) \implies$ \textbf{Ghi $P$ ra HBM} ($\Theta(N^2)$).
+            \item Nạp lại $P, V$, tính $O = P V \implies$ \textbf{Ghi $O$ ra HBM} ($\Theta(Nd)$).
+          \end{enumerate}
+          \vspace{1pt}
+          {\color{BrandCrimson}\textbf{Hậu quả}}: Với $N=4096$, ma trận $P$ tốn hơn 8 GB VRAM và hàng triệu chu kỳ GPU chỉ để chờ nạp dữ liệu!
+        };
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 % ------------------------------------------------------------------------------
-% SLIDE 4: Ý TƯỞNG CỐT LÕI: IO-AWARENESS & TILING
+% SLIDE 4: TRIẾT LÝ IO-AWARENESS & TILING
 % ------------------------------------------------------------------------------
-\begin{frame}{3. Ý tưởng Cốt lõi: IO-Awareness \& Kỹ thuật Phân khối (Tiling)}
-\begin{columns}[T]
-  \begin{column}{0.48\textwidth}
-    \begin{block}{Triết lý Nhận biết Phần cứng (IO-Awareness)}
-      \begin{itemize}
-        \item Thiết kế thuật toán dựa trên \textbf{phân cấp bộ nhớ vật lý}: Hạn chế tối đa đọc/ghi ma trận qua HBM.
-        \item Thực hiện GEMM và Softmax \textbf{ngay trong SRAM} (Kernel Fusion).
-        \item \textbf{Cắt giảm I/O đột phá}:
-          \begin{itemize}
-            \item Standard Attention: $\Theta(Nd + N^2)$ HBM I/O.
-            \item FlashAttention: $\Theta(N^2 d^2 M^{-1})$ HBM I/O.
-            \item Giảm số lần nạp/ghi HBM từ $\mathbf{5\times - 10\times}$ ($\sim M/4d$).
-          \end{itemize}
-        \item Dung lượng bộ nhớ phụ giảm từ $\mathcal{O}(N^2)$ về $\mathbf{\mathcal{O}(N)}$!
-      \end{itemize}
-    \end{block}
-  \end{column}
+\section{NGUYÊN LÝ FLASHATTENTION}
+\begin{frame}{Triết lý Đột phá: IO-Awareness \& Kỹ thuật Phân khối (Tiling)}
+  \vspace{-0.3em}
+  {\fontsize{9.5pt}{12pt}\selectfont \color{MutedText}Chuyển dịch trọng tâm tối ưu từ \textbf{Đếm số phép tính FLOPs} sang \textbf{Cắt giảm lượt đọc/ghi bộ nhớ (I/O Complexity)}.}
+  \vspace{0.3em}
 
-  \begin{column}{0.48\textwidth}
-    \begin{exampleblock}{Kỹ thuật Phân khối (Tiling Blocks)}
-      \begin{itemize}
-        \item Chia $Q$ thành các khối $B_r \times d$, chia $K, V$ thành các khối $B_c \times d$.
-        \item Chọn kích thước khối sao cho nạp \textbf{vừa khít trong SRAM}:
-        $$B_c = \left\lceil \frac{M}{4d} \right\rceil, \quad B_r = \min\left(\left\lceil \frac{M}{4d} \right\rceil, d\right)$$
-        \item Nạp từng khối $K_j, V_j$, duyệt qua các khối $Q_i$, tính toán cục bộ và tích lũy kết quả.
-        \item \textbf{Chỉ ghi ma trận đầu ra $O$ cuối cùng ra HBM}.
-      \end{itemize}
-    \end{exampleblock}
-  \end{column}
-\end{columns}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{tikzpicture}
+        \node[draw=CardBorder, fill=CardBg, rounded corners=6pt, inner sep=8pt, text width=0.94\textwidth] {
+          \pilltag{PillBg}{\color{BrandBlue}NGUYÊN LÝ CỐT LÕI}\\
+          \vspace{3pt}
+          \textbf{\fontsize{10pt}{12pt}\selectfont Kỹ thuật Tiling (Phân khối)}
+          \begin{itemize}\setlength{\itemsep}{2.5pt}\fontsize{8.5pt}{10.5pt}\selectfont
+            \item Chia ma trận $Q, K, V$ thành các khối vừa khít kích thước SRAM ($B_r, B_c$).
+            \item Nạp một khối $K_j, V_j$ vào SRAM, duyệt qua các khối $Q_i$.
+            \item Tính toán $Q_i K_j^T$, Softmax và nhân $V_j$ \textbf{hoàn toàn trong SRAM}.
+            \item \textbf{Kernel Fusion}: Gộp toàn bộ chuỗi tính toán vào đúng 1 GPU Kernel duy nhất.
+          \end{itemize}
+        };
+      \end{tikzpicture}
+    \end{column}
+
+    \begin{column}{0.48\textwidth}
+      \begin{tikzpicture}
+        \node[draw=BrandEmerald!30, fill=GreenPillBg!20, rounded corners=6pt, inner sep=8pt, text width=0.94\textwidth] {
+          \pilltag{GreenPillBg}{\color{BrandEmerald}ĐỘ PHỨC TẠP I/O LÝ THUYẾT}\\
+          \vspace{3pt}
+          \textbf{\fontsize{10pt}{12pt}\selectfont Cắt giảm 5--10$\times$ Truy cập HBM}
+          \begin{itemize}\setlength{\itemsep}{2.5pt}\fontsize{8.5pt}{10.5pt}\selectfont
+            \item \textbf{Standard Attention}: $\Theta(Nd + N^2)$ HBM I/O.
+            \item \textbf{FlashAttention}: $\Theta(N^2 d^2 M^{-1})$ HBM I/O ($M$ là dung lượng SRAM).
+            \item \textbf{Bộ nhớ phụ}: Giảm từ $\mathcal{O}(N^2)$ xuống $\mathbf{\mathcal{O}(N)}$!
+            \item Tuyệt đối không sinh ma trận kích thước $N \times N$ ra HBM.
+          \end{itemize}
+        };
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 % ------------------------------------------------------------------------------
 % SLIDE 5: TRỤ CỘT 1: ONLINE SOFTMAX
 % ------------------------------------------------------------------------------
-\begin{frame}{4. Trụ cột 1: Thuật toán Online Softmax (Cập nhật Từng phần)}
-\begin{columns}[T]
-  \begin{column}{0.46\textwidth}
-    \begin{alertblock}{Rào cản của Softmax Tiêu chuẩn}
-      \begin{itemize}
-        \item Softmax chuẩn cần giá trị max toàn dòng $m_i$ và tổng mẫu số $\ell_i$ để tránh tràn số học:
-        $$m_i = \max_{j} S_{ij}, \quad \ell_i = \sum_{j} e^{S_{ij} - m_i}$$
-        $$P_{ij} = \frac{e^{S_{ij} - m_i}}{\ell_i}, \quad O_i = \sum_{j} P_{ij} V_j$$
-        \item Khi chia khối theo cột ($K_j$), tại bước $j$ ta \textbf{chưa có đủ toàn bộ dòng} để tính $m_i$ và $\ell_i$!
-      \end{itemize}
-    \end{alertblock}
-  \end{column}
+\section{THUẬT TOÁN CỐT LÕI}
+\begin{frame}{Trụ cột 1: Thuật toán Online Softmax (Cập nhật Từng phần)}
+  \vspace{-0.3em}
+  {\fontsize{9.5pt}{12pt}\selectfont \color{MutedText}Giải bài toán hóc búa: Làm sao tính Softmax chuẩn xác khi chỉ có trong tay từng khối $K_j, V_j$?}
+  \vspace{0.3em}
 
-  \begin{column}{0.50\textwidth}
-    \begin{exampleblock}{Giải pháp: Online Softmax (Chính xác 100\%)}
-      Khi duyệt qua khối cột mới $j$, cập nhật lũy tiến:
-      \begin{enumerate}
-        \item \textbf{Cập nhật max mới}:
-        $m_i^{\text{new}} = \max\left(m_i^{\text{old}},\, \max(S_i^{(j)})\right)$
-        \item \textbf{Cập nhật mẫu số chuẩn hóa}:
-        $\ell_i^{\text{new}} = e^{m_i^{\text{old}} - m_i^{\text{new}}} \ell_i^{\text{old}} + \sum e^{S_i^{(j)} - m_i^{\text{new}}}$
-        \item \textbf{Cập nhật vector tích lũy}:
-        $O_i^{\text{new}} = e^{m_i^{\text{old}} - m_i^{\text{new}}} O_i^{\text{old}} + e^{S_i^{(j)} - m_i^{\text{new}}} V_j$
-      \end{enumerate}
-      \vspace{0.2em}
-      Cuối chu trình: $O_i^{\text{final}} = O_i / \ell_i$. Kết quả \textbf{trùng khớp hoàn toàn} với Softmax toàn cục!
-    \end{exampleblock}
-  \end{column}
-\end{columns}
+  \begin{columns}[T]
+    \begin{column}{0.45\textwidth}
+      \begin{tikzpicture}
+        \node[draw=BrandCrimson!30, fill=CardBg, rounded corners=6pt, inner sep=7pt, text width=0.94\textwidth] {
+          \textbf{\fontsize{9pt}{11pt}\selectfont \color{BrandCrimson}Nghịch lý Softmax Toàn cục:}\\[3pt]
+          \fontsize{8pt}{10pt}\selectfont
+          Softmax thông thường cần duyệt hết cả dòng $N$ phần tử để tìm max $m$ và mẫu số $\ell$:
+          $$m = \max_{j} S_j, \quad \ell = \sum_{j} e^{S_j - m}$$
+          $$P_j = \frac{e^{S_j - m}}{\ell}$$
+          Khi chia khối, tại bước $j$ ta \textbf{chưa nhìn thấy} các cột phía sau!
+        };
+      \end{tikzpicture}
+    \end{column}
+
+    \begin{column}{0.51\textwidth}
+      \begin{tikzpicture}
+        \node[draw=BrandEmerald!30, fill=GreenPillBg!20, rounded corners=6pt, inner sep=7pt, text width=0.94\textwidth] {
+          \textbf{\fontsize{9pt}{11pt}\selectfont \color{BrandEmerald}Cơ chế Cập nhật Lũy kế (Online Softmax):}\\[2pt]
+          \fontsize{8pt}{9.8pt}\selectfont
+          Duyệt qua từng khối, cập nhật running max và running sum:
+          \begin{enumerate}\setlength{\itemsep}{1.5pt}
+            \item $m^{\text{new}} = \max\left(m^{\text{old}},\, \max(S^{(j)})\right)$
+            \item $\alpha = e^{m^{\text{old}} - m^{\text{new}}}, \quad \beta = e^{\max(S^{(j)}) - m^{\text{new}}}$
+            \item $\ell^{\text{new}} = \alpha \ell^{\text{old}} + \sum \beta e^{S^{(j)} - \max(S^{(j)})}$
+            \item $O^{\text{new}} = \frac{\alpha \ell^{\text{old}} O^{\text{old}} + \beta P^{(j)} V_j}{\ell^{\text{new}}}$
+          \end{enumerate}
+          \vspace{1pt}
+          \textbf{Khẳng định}: Kết quả $O$ cuối cùng trùng khớp toán học tuyệt đối (\textbf{Exact Attention})!
+        };
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 % ------------------------------------------------------------------------------
-% SLIDE 6: TRỤ CỘT 2: RECOMPUTATION TRONG BACKWARD PASS
+% SLIDE 6: TRỤ CỘT 2: RECOMPUTATION Ở BACKWARD
 % ------------------------------------------------------------------------------
-\begin{frame}{5. Trụ cột 2: Recomputation trong Backward Pass (Đổi FLOPs lấy I/O)}
-\begin{columns}[T]
-  \begin{column}{0.48\textwidth}
-    \begin{alertblock}{Nút thắt Bộ nhớ ở Lượt Truyền Ngược}
-      \begin{itemize}
-        \item Standard Attention cần ma trận chú ý $P \in \mathbb{R}^{N \times N}$ để tính đạo hàm ngược:
-        $$d V = P^T d O, \quad d P = d O V^T$$
-        $$d S = P \circ (d P - \operatorname{rowsum}(d P \circ P))$$
-        \item Buộc phải \textbf{lưu $P \in \mathbb{R}^{N \times N}$ vào HBM} ở lượt Forward $\implies$ Tiêu tốn $\mathbf{\mathcal{O}(N^2)}$ bộ nhớ HBM!
-        \item Nguyên nhân chính dẫn đến sụp đổ bộ nhớ (\textbf{CUDA OOM}) khi độ dài chuỗi $N$ tăng lên.
-      \end{itemize}
-    \end{alertblock}
-  \end{column}
+\begin{frame}{Trụ cột 2: Recomputation ở Lượt Truyền Ngược (Backward)}
+  \vspace{-0.3em}
+  {\fontsize{9.5pt}{12pt}\selectfont \color{MutedText}Tư duy kỹ thuật đỉnh cao: Đổi một vài phép tính FLOPs trong SRAM để giải phóng hàng chục GB bộ nhớ HBM.}
+  \vspace{0.3em}
 
-  \begin{column}{0.48\textwidth}
-    \begin{exampleblock}{Chiến lược Recomputation của FlashAttention}
-      \begin{itemize}
-        \item \textbf{Forward Pass}: Tuyệt đối KHÔNG lưu ma trận $P$ hay $S$. Chỉ lưu $Q, K, V, O$ và các thống kê $\mathbf{\mathcal{O}(N)}$:
-        $$m \in \mathbb{R}^N \quad \text{và} \quad \ell \in \mathbb{R}^N$$
-        \item \textbf{Backward Pass}: Nạp lại từng khối $Q_i, K_j, V_j$ vào SRAM, \textbf{tính lại $S_{ij}, P_{ij}$ ngay tại chỗ trong SRAM}.
-        \item \textbf{Chuyển dịch tư duy}: Chấp nhận tốn thêm một số phép tính (FLOPs) trong SRAM để \textbf{triệt tiêu hoàn toàn chi phí đọc/ghi $\mathcal{O}(N^2)$ từ HBM}.
-      \end{itemize}
-    \end{exampleblock}
-  \end{column}
-\end{columns}
-\end{frame}
-
-% ------------------------------------------------------------------------------
-% SLIDE 7: THIẾT LẬP MÔI TRƯỜNG THỰC NGHIỆM
-% ------------------------------------------------------------------------------
-\begin{frame}{6. Thiết lập Môi trường Thực nghiệm Tái lập Độc lập}
-\begin{columns}[T]
-  \begin{column}{0.50\textwidth}
-    \begin{block}{Cấu hình Phần cứng \& Phần mềm}
-      \scriptsize
-      \begin{tabular}{ll}
-        \toprule
-        \textbf{Thông số} & \textbf{Chi tiết cấu hình thực tế} \\
-        \midrule
-        GPU & \textbf{NVIDIA RTX 3050 Ti Laptop} \\
-        Kiến trúc & Ampere (Compute Capability sm\_86) \\
-        Quy mô SM & 20 SMs (2560 CUDA cores) \\
-        Bộ nhớ VRAM & \textbf{4096 MB (4 GB) GDDR6} (128-bit) \\
-        Băng thông & $\sim 192$ GB/s \\
-        Hệ điều hành & Windows 11 + \textbf{WSL2 Ubuntu 22.04 LTS} \\
-        Thư viện & Python 3.10.12, \textbf{PyTorch 2.1.2+cu121} \\
-        Độ chính xác & FP16 Half Precision (\texttt{torch.float16}) \\
-        \bottomrule
-      \end{tabular}
-    \end{block}
-  \end{column}
-
-  \begin{column}{0.46\textwidth}
-    \begin{block}{Quy trình Đo đạc Chuẩn hóa}
-      \begin{itemize}
-        \item \textbf{Cấu hình Transformer}:
-          \begin{itemize}
-            \item Batch size $B = 4$, Heads $H = 8$, Dim $d = 64$.
-            \item Chiều dài chuỗi $N \in \{128 \to 8192\}$.
-            \item Tại $N=8192$: xử lý $262{,}144$ tokens/lượt!
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{tikzpicture}
+        \node[draw=BrandCrimson!30, fill=CardBg, rounded corners=6pt, inner sep=8pt, text width=0.94\textwidth] {
+          \pilltag{RedPillBg}{\color{BrandCrimson}CÁCH TIẾP CẬN CŨ}\\
+          \vspace{3pt}
+          \textbf{\fontsize{10pt}{12pt}\selectfont Standard Attention Backward}
+          \begin{itemize}\setlength{\itemsep}{2.5pt}\fontsize{8.5pt}{10.5pt}\selectfont
+            \item Cần ma trận $P \in \mathbb{R}^{N \times N}$ để tính đạo hàm:
+            $$d V = P^T d O, \quad d P = d O V^T$$
+            \item Bắt buộc phải \textbf{lưu toàn bộ $P$ ra HBM} ở lượt Forward!
+            \item Tốn $\mathbf{\mathcal{O}(N^2)}$ bộ nhớ lưu trữ trung gian.
+            \item Đây là thủ phạm chính gây ra lỗi sập bộ nhớ (\textbf{CUDA OOM}) khi huấn luyện.
           \end{itemize}
-        \item \textbf{Đo lường chu kỳ (Forward + Backward)}:
-          \begin{itemize}
-            \item Khởi động (warmup) 10 lần lặp.
-            \item Đo 30 lần bằng CUDA Events kèm \texttt{synchronize()}.
-            \item Đo VRAM đỉnh bằng \texttt{max\_memory\_allocated()}.
+        };
+      \end{tikzpicture}
+    \end{column}
+
+    \begin{column}{0.48\textwidth}
+      \begin{tikzpicture}
+        \node[draw=BrandBlue!30, fill=PillBg!30, rounded corners=6pt, inner sep=8pt, text width=0.94\textwidth] {
+          \pilltag{PillBg}{\color{BrandBlue}CHIẾN LƯỢC FLASHATTENTION}\\
+          \vspace{3pt}
+          \textbf{\fontsize{10pt}{12pt}\selectfont Selective Recomputation}
+          \begin{itemize}\setlength{\itemsep}{2.5pt}\fontsize{8.5pt}{10.5pt}\selectfont
+            \item \textbf{Forward}: Tuyệt đối KHÔNG lưu $P$ ra HBM. Chỉ lưu $O$ và vector thống kê $(m, \ell) \in \mathbb{R}^N$ ($\mathcal{O}(N)$).
+            \item \textbf{Backward}: Nạp lại các khối $Q_i, K_j$ vào SRAM và \textbf{tính lại $P_{ij}$ tại chỗ trong SRAM}.
+            \item Tăng nhẹ $\sim 15\%$ FLOPs nhưng \textbf{nhanh hơn gấp nhiều lần} vì loại bỏ nghẽn đọc/ghi HBM!
           \end{itemize}
-      \end{itemize}
-    \end{block}
-  \end{column}
-\end{columns}
+        };
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 % ------------------------------------------------------------------------------
-% SLIDE 8: KIỂM CHỨNG THUẬT TOÁN (ALGORITHM 1 VERIFICATION)
+% SLIDE 7: MÔI TRƯỜNG THỰC NGHIỆM TÁI LẬP
 % ------------------------------------------------------------------------------
-\begin{frame}{7. Kiểm chứng Thuật toán: Độ Chính xác Số học Tuyệt đối}
-\begin{columns}[T]
-  \begin{column}{0.48\textwidth}
-    \begin{block}{Mô đun Kiểm chứng Thuần PyTorch}
-      \begin{itemize}
-        \item Kịch bản độc lập \texttt{reproduce\_fa1\_algo1.py} mô phỏng chuẩn xác từng bước của Thuật toán 1:
-        \item Thiết lập: $N = 512, d = 64$, khối SRAM mô phỏng $B_r = 64, B_c = 64$.
-        \item Đầu vào: Ma trận ngẫu nhiên $Q, K, V \sim \mathcal{N}(0, 1)$ với hạt giống ngẫu nhiên cố định 42.
-        \item Cập nhật phân khối từng bước và so sánh ma trận đầu ra $O_{\text{fa1}}$ với Standard Attention $O_{\text{std}}$.
-      \end{itemize}
-    \end{block}
-  \end{column}
+\section{THỰC NGHIỆM TÁI LẬP}
+\begin{frame}{Môi trường Thực nghiệm Tái lập Độc lập}
+  \vspace{-0.3em}
+  {\fontsize{9.5pt}{12pt}\selectfont \color{MutedText}Kiểm chứng độc lập trên phần cứng thực tế phân khúc laptop cá nhân để chứng minh tính khả thi phổ quát.}
+  \vspace{0.4em}
 
-  \begin{column}{0.48\textwidth}
-    \begin{exampleblock}{Kết quả Đo đạc Sai số Số học}
-      \begin{itemize}
-        \item \textbf{Sai số tuyệt đối tối đa}:
-        $$\epsilon_{\max} = \max |O_{\text{std}} - O_{\text{fa1}}| = \mathbf{2.384 \times 10^{-7}}$$
-        \item \textbf{Sai số tương đối}: $\epsilon_{\text{rel}} < 10^{-6} \ll 10^{-5}$.
-      \end{itemize}
-    \end{exampleblock}
+  \begin{columns}[T]
+    \begin{column}{0.235\textwidth}
+      \begin{tikzpicture}
+        \node[draw=CardBorder, fill=CardBg, rounded corners=6pt, inner sep=6pt, text width=0.92\textwidth] {
+          \pilltag{PillBg}{\color{BrandBlue}PHẦN CỨNG}\\[3pt]
+          \textbf{\fontsize{9.5pt}{11pt}\selectfont RTX 3050 Ti}\\
+          \fontsize{7pt}{9pt}\selectfont\color{MutedText}
+          Laptop GPU (sm\_86)\\
+          20 SMs (2560 Cores)\\
+          Băng thông: 192 GB/s
+        };
+      \end{tikzpicture}
+    \end{column}
 
-    \begin{block}{Kết luận Khoa học}
-      \begin{itemize}
-        \item FlashAttention là thuật toán \textbf{Exact Attention} (tính toán chính xác tuyệt đối).
-        \item Sai số $\approx 2.38 \times 10^{-7}$ chỉ do sai số làm tròn số học dấu phẩy động (float32 rounding).
-        \item \textbf{Bảo toàn 100\% chất lượng mô hình!}
-      \end{itemize}
-    \end{block}
-  \end{column}
-\end{columns}
+    \begin{column}{0.235\textwidth}
+      \begin{tikzpicture}
+        \node[draw=BrandCrimson!30, fill=RedPillBg!20, rounded corners=6pt, inner sep=6pt, text width=0.92\textwidth] {
+          \pilltag{RedPillBg}{\color{BrandCrimson}VRAM GIỚI HẠN}\\[3pt]
+          \textbf{\fontsize{9.5pt}{11pt}\selectfont 4096 MB VRAM}\\
+          \fontsize{7pt}{9pt}\selectfont\color{MutedText}
+          GDDR6 128-bit\\
+          Dễ phát hiện OOM\\
+          Thách thức cực lớn
+        };
+      \end{tikzpicture}
+    \end{column}
+
+    \begin{column}{0.235\textwidth}
+      \begin{tikzpicture}
+        \node[draw=CardBorder, fill=CardBg, rounded corners=6pt, inner sep=6pt, text width=0.92\textwidth] {
+          \pilltag{PillBg}{\color{BrandBlue}HỆ ĐIỀU HÀNH}\\[3pt]
+          \textbf{\fontsize{9.5pt}{11pt}\selectfont WSL2 Ubuntu}\\
+          \fontsize{7pt}{9pt}\selectfont\color{MutedText}
+          Ubuntu 22.04 LTS\\
+          Direct GPU Passthrough\\
+          CUDA Driver 537.70
+        };
+      \end{tikzpicture}
+    \end{column}
+
+    \begin{column}{0.235\textwidth}
+      \begin{tikzpicture}
+        \node[draw=BrandEmerald!30, fill=GreenPillBg!20, rounded corners=6pt, inner sep=6pt, text width=0.92\textwidth] {
+          \pilltag{GreenPillBg}{\color{BrandEmerald}FRAMEWORK}\\[3pt]
+          \textbf{\fontsize{9.5pt}{11pt}\selectfont PyTorch 2.10}\\
+          \fontsize{7pt}{9pt}\selectfont\color{MutedText}
+          PyTorch SDPA Flash\\
+          Half Precision (FP16)\\
+          Python 3.12 (uv venv)
+        };
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
+
+  \vspace{0.4em}
+  \begin{tikzpicture}
+    \node[draw=CardBorder, fill=CardBg, rounded corners=6pt, inner sep=7pt, text width=0.96\textwidth] {
+      \textbf{\fontsize{8.5pt}{10.5pt}\selectfont Cấu hình Khối lượng Công việc (Benchmark Workload):} \fontsize{8pt}{10pt}\selectfont
+      $\text{Batch Size } B = 4, \quad \text{Số Heads } H = 8, \quad \text{Head Dim } d = 64$. Quét 7 dải ngữ cảnh $N \in \{128, 256, 512, 1024, 2048, 4096, 8192\}$. Đo đạc cả hai chiều \textbf{Forward + Backward Pass} (10 lần warmup, 30 lần timing bằng CUDA Events).
+    };
+  \end{tikzpicture}
 \end{frame}
 
 % ------------------------------------------------------------------------------
-% SLIDE 9: BẢNG SỐ LIỆU BENCHMARK TOÀN DIỆN
+% SLIDE 8: KIỂM CHỨNG TOÁN HỌC (EXACT ATTENTION)
 % ------------------------------------------------------------------------------
-\begin{frame}{8. Bảng Số liệu Benchmark Toàn diện ($N=128 \to 8192$)}
-\begin{center}
-\footnotesize
-\setlength{\tabcolsep}{5pt}
-\renewcommand{\arraystretch}{1.08}
-\begin{tabular}{rcccccc}
-\toprule
-\multirow{2}{*}{\textbf{SeqLen ($N$)}} & \multicolumn{3}{c}{\textbf{Thời gian thực thi (Forward + Backward)}} & \multicolumn{3}{c}{\textbf{Bộ nhớ đỉnh VRAM (Peak Memory)}} \\
-\cmidrule(lr){2-4} \cmidrule(lr){5-7}
- & \textbf{Standard (ms)} & \textbf{Flash (ms)} & \textbf{Speedup} & \textbf{Standard (MB)} & \textbf{Flash (MB)} & \textbf{Tiết kiệm} \\
-\midrule
-128  & 5.21    & 0.99   & \textbf{5.26$\times$}  & 29.3   & 21.8  & 1.34$\times$ \\
-256  & 2.05    & 0.78   & \textbf{2.62$\times$}  & 58.3   & 27.3  & 2.14$\times$ \\
-512  & 5.20    & 0.68   & \textbf{7.64$\times$}  & 164.3  & 38.4  & 4.28$\times$ \\
-1024 & 18.94   & 2.18   & \textbf{8.69$\times$}  & 568.3  & 60.5  & 9.39$\times$ \\
-2048 & 73.24   & 7.75   & \textbf{9.45$\times$}  & 2144.3 & 104.8 & 20.46$\times$ \\
-4096 & 2496.00 & 30.16  & \textbf{82.75$\times$} & 8368.3 & 193.3 & \textbf{43.29$\times$} \\
-8192 & \textbf{OOM} & 117.50 & \textbf{N/A (OOM)}     & \textbf{OOM}   & 370.3 & \textbf{$\infty$} \\
-\bottomrule
-\end{tabular}
-\end{center}
+\begin{frame}{Kiểm chứng Thuật toán: Độ Chính xác Số học Tuyệt đối}
+  \vspace{-0.3em}
+  {\fontsize{9.5pt}{12pt}\selectfont \color{MutedText}FlashAttention là thuật toán Exact Attention (chính xác tuyệt đối), không phải xấp xỉ.}
+  \vspace{0.4em}
 
-\vspace{-0.4em}
-\begin{columns}[T]
-  \begin{column}{0.48\textwidth}
-    \begin{exampleblock}{Đột phá Tốc độ tại $N=4096$}
-      FlashAttention đạt gia tốc kỷ lục \textbf{82.75$\times$} (30.16 ms vs 2496 ms) nhờ hóa giải hiện tượng nghẽn phân trang PCIe.
-    \end{exampleblock}
-  \end{column}
-  \begin{column}{0.48\textwidth}
-    \begin{alertblock}{Hóa giải Tràn Bộ nhớ tại $N=8192$}
-      Standard Attention sụp đổ vì \textbf{CUDA OOM}, trong khi Flash hoàn thành mượt mà trong \textbf{117.50 ms} với chỉ \textbf{370.3 MB VRAM}!
-    \end{alertblock}
-  \end{column}
-\end{columns}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{tikzpicture}
+        \node[draw=BrandEmerald!30, fill=GreenPillBg!20, rounded corners=6pt, inner sep=8pt, text width=0.94\textwidth] {
+          \pilltag{GreenPillBg}{\color{BrandEmerald}KẾT QUẢ ĐO ĐẠC SAI SỐ SỐ HỌC}\\[4pt]
+          {\fontsize{7.5pt}{9pt}\selectfont Sai số tuyệt đối tối đa so với Standard Attention:}\\[2pt]
+          {\fontsize{18pt}{22pt}\selectfont \textbf{\color{BrandEmerald}2.384 $\times$ 10$^{-7}$}}\\[4pt]
+          {\fontsize{8pt}{10pt}\selectfont \color{BrandDark}
+          $\bullet$ Thử nghiệm với $N=512, d=64$ trên PyTorch thuần.\\
+          $\bullet$ Sai số $\approx 10^{-7}$ chỉ do sai số làm tròn số học dấu phẩy động (FP32 precision limit).\\
+          $\bullet$ \textbf{Khẳng định}: Trùng khớp hoàn toàn với Standard Attention!
+          }
+        };
+      \end{tikzpicture}
+    \end{column}
+
+    \begin{column}{0.48\textwidth}
+      \begin{tikzpicture}
+        \node[draw=CardBorder, fill=CardBg, rounded corners=6pt, inner sep=8pt, text width=0.94\textwidth] {
+          \pilltag{PillBg}{\color{BrandBlue}Ý NGHĨA KHOA HỌC THỰC TIỄN}\\[4pt]
+          \begin{itemize}\setlength{\itemsep}{3.5pt}\fontsize{8pt}{10pt}\selectfont
+            \item \textbf{Không làm suy giảm biểu diễn}: Khác với các phương pháp xấp xỉ (Sparse, Low-rank, Linformer, Performer) bị giảm Perplexity/Accuracy.
+            \item \textbf{Thả vào dùng ngay (Drop-in Replacement)}: Có thể nạp thẳng trọng số của các mô hình đã train sẵn (Llama, Mistral, GPT) mà không cần fine-tune lại!
+            \item \textbf{Gradient tương đương}: Quá trình huấn luyện hội tụ đường cong loss y hệt Standard Attention.
+          \end{itemize}
+        };
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 % ------------------------------------------------------------------------------
-% SLIDE 10: PHÂN TÍCH TỐC ĐỘ (RUNTIME SPEEDUP)
+% SLIDE 9: BẢNG SỐ LIỆU TỔNG HỢP BENCHMARK
 % ------------------------------------------------------------------------------
-\begin{frame}{9. Phân tích Tốc độ: Từ Kernel Fusion đến Gia tốc 82.75$\times$}
-\begin{columns}[T]
-  \begin{column}{0.48\textwidth}
-    \begin{center}
-      \includegraphics[width=\linewidth]{figure3_reproduction.png}
-      \vspace{-0.6em}
-      \captionof{figure}{\scriptsize Tái lập Figure 3: Thời gian thực thi (trái) \& Bộ nhớ (phải)}
-    \end{center}
-  \end{column}
+\section{KẾT QUẢ ĐO ĐẠC}
+\begin{frame}{Bảng Số liệu Benchmark Toàn diện ($N=128 \to 8192$)}
+  \vspace{-0.4em}
+  \begin{center}
+  \fontsize{7.5pt}{9.5pt}\selectfont
+  \setlength{\tabcolsep}{4.5pt}
+  \renewcommand{\arraystretch}{1.08}
+  \begin{tabular}{rcccccc}
+    \toprule
+    \multirow{2}{*}{\textbf{SeqLen ($N$)}} & \multicolumn{3}{c}{\textbf{Thời gian thực thi Fwd + Bwd (ms)}} & \multicolumn{3}{c}{\textbf{Bộ nhớ VRAM tiêu thụ (MB)}} \\
+    \cmidrule(lr){2-4} \cmidrule(lr){5-7}
+     & \textbf{Standard} & \textbf{FlashAttn} & \textbf{Speedup} & \textbf{Standard} & \textbf{FlashAttn} & \textbf{Tiết kiệm} \\
+    \midrule
+    128  & 5.21 ms    & 0.99 ms   & \textbf{5.26$\times$}  & 29.3 MB   & 21.8 MB  & 1.34$\times$ \\
+    256  & 2.05 ms    & 0.78 ms   & \textbf{2.62$\times$}  & 58.3 MB   & 27.3 MB  & 2.14$\times$ \\
+    512  & 5.20 ms    & 0.68 ms   & \textbf{7.64$\times$}  & 164.3 MB  & 38.4 MB  & 4.28$\times$ \\
+    1024 & 18.94 ms   & 2.18 ms   & \textbf{8.69$\times$}  & 568.3 MB  & 60.5 MB  & 9.39$\times$ \\
+    2048 & 73.24 ms   & 7.75 ms   & \textbf{9.45$\times$}  & 2,144.3 MB & 104.8 MB & 20.46$\times$ \\
+    \textbf{4096} & 2,496.00 ms & \textbf{30.16 ms} & \textbf{\color{BrandEmerald}82.75$\times$} & 8,368.3 MB & \textbf{193.3 MB} & \textbf{\color{BrandEmerald}43.29$\times$} \\
+    \textbf{8192} & \textbf{\color{BrandCrimson}OOM} & \textbf{117.50 ms} & \textbf{\color{BrandEmerald}Hoạt động tốt} & \textbf{\color{BrandCrimson}OOM} & \textbf{370.3 MB} & \textbf{\color{BrandEmerald}Vượt ngưỡng} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
 
-  \begin{column}{0.50\textwidth}
-    \begin{block}{Ba Hiện tượng Phần cứng Cốt lõi}
-      \begin{enumerate}
-        \item \textbf{Chuỗi ngắn ($N \le 512$)}:
-          \begin{itemize}
-            \item Standard bị overhead khởi chạy nhiều kernel rời rạc và warp under-utilization ($5.21 \text{ ms} \to 2.05 \text{ ms}$).
-            \item Flash dùng \textbf{Kernel Fusion} nên độ trễ cực thấp và ổn định ($0.99 \to 0.68 \text{ ms}$).
-          \end{itemize}
-        \item \textbf{Vùng trung bình ($N = 1024 - 2048$)}:
-          \begin{itemize}
-            \item Speedup ổn định từ \textbf{8.69$\times \to$ 9.45$\times$}, phản ánh lợi thế cắt giảm I/O HBM.
-          \end{itemize}
-        \item \textbf{Vách đá hiệu năng tại $N = 4096$}:
-          \begin{itemize}
-            \item Standard vượt 4GB VRAM $\implies$ kích hoạt Host Memory Paging qua bus PCIe chậm chạp ($73 \text{ ms} \to \mathbf{2496 \text{ ms}}$).
-            \item Flash chỉ mất \textbf{30.16 ms} $\implies$ \textbf{Speedup 82.75$\times$}!
-          \end{itemize}
-      \end{enumerate}
-    \end{block}
-  \end{column}
-\end{columns}
+  \vspace{-0.3em}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \pilltag{GreenPillBg}{\color{BrandEmerald}GIA TỐC 82.75$\times$ TẠI $N=4096$}\\
+      {\fontsize{7.5pt}{9.5pt}\selectfont Standard bị nghẽn phân trang RAM hệ thống, trong khi Flash duy trì 30.16 ms!}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \pilltag{RedPillBg}{\color{BrandCrimson}SẬP OOM TẠI $N=8192$}\\
+      {\fontsize{7.5pt}{9.5pt}\selectfont Standard Attention tràn card 4GB, FlashAttn chỉ tốn 370 MB ($<10\%$ VRAM)!}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 % ------------------------------------------------------------------------------
-% SLIDE 11: PHÂN TÍCH BỘ NHỚ (MEMORY FOOTPRINT)
+% SLIDE 10: PHÂN TÍCH TỐC ĐỘ THỰC THI (RUNTIME)
 % ------------------------------------------------------------------------------
-\begin{frame}{10. Phân tích Bộ nhớ: Tuyến tính $O(N)$ \& Hóa giải Rào cản OOM}
-\begin{columns}[T]
-  \begin{column}{0.48\textwidth}
-    \begin{center}
-      \includegraphics[width=\linewidth]{figure3_reproduction.png}
-      \vspace{-0.6em}
-      \captionof{figure}{\scriptsize Tái lập Figure 3: Độ dốc bộ nhớ $O(N^2)$ (đỏ) vs $O(N)$ (xanh)}
-    \end{center}
-  \end{column}
+\begin{frame}{Phân tích Tốc độ: Từ Kernel Fusion đến Gia tốc 82.75$\times$}
+  \vspace{-0.3em}
+  {\fontsize{9.5pt}{12pt}\selectfont \color{MutedText}FlashAttention nhanh hơn ở mọi quy mô ngữ cảnh và vượt trội khi kích thước ma trận bùng nổ.}
+  \vspace{0.2em}
 
-  \begin{column}{0.50\textwidth}
-    \begin{block}{Quy luật Tăng trưởng Bộ nhớ VRAM}
-      \begin{itemize}
-        \item \textbf{Standard Attention tăng trưởng $O(N^2)$}: Bùng nổ theo hàm mũ do phải lưu ma trận $N \times N$ ($164 \text{ MB} \to 2144 \text{ MB} \to 8368 \text{ MB}$).
-        \item \textbf{FlashAttention tăng trưởng tuyến tính $O(N)$}: Duy trì độ dốc 1 hoàn hảo trên đồ thị log-log vì chỉ lưu tensor kích thước $N \times d$.
-      \end{itemize}
-    \end{block}
+  \begin{columns}[T]
+    \begin{column}{0.44\textwidth}
+      \begin{tikzpicture}
+        \node[draw=CardBorder, fill=CardBg, rounded corners=6pt, inner sep=7pt, text width=0.92\textwidth] {
+          \textbf{\fontsize{8.5pt}{10.5pt}\selectfont 3 Vùng Hiệu năng Phần cứng:}\\[3pt]
+          \fontsize{7.5pt}{9.5pt}\selectfont
+          \begin{enumerate}\setlength{\itemsep}{2.5pt}
+            \item \textbf{Vùng chuỗi ngắn ($N \le 512$)}:
+            Standard Attention tốn chi phí khởi chạy nhiều kernel rời rạc. FlashAttention dùng \textbf{Kernel Fusion} nên độ trễ ổn định ($< 1$ ms).
+            \item \textbf{Vùng trung bình ($N = 1024 - 2048$)}:
+            Speedup ổn định từ \textbf{8.7$\times$ đến 9.5$\times$}, minh chứng rõ ràng việc cắt giảm truy cập HBM.
+            \item \textbf{Vách đá hiệu năng ($N = 4096$)}:
+            Standard Attention vượt 4GB VRAM $\implies$ phải paging qua bus PCIe chậm chạp. FlashAttention đạt gia tốc kỷ lục \textbf{82.75$\times$}!
+          \end{enumerate}
+        };
+      \end{tikzpicture}
+    \end{column}
 
-    \begin{exampleblock}{Tiết kiệm VRAM \& Hóa giải OOM}
-      \begin{itemize}
-        \item Tại $N=4096$: Tiết kiệm \textbf{43.29$\times$} VRAM (193.3 MB vs 8368.3 MB).
-        \item Tại $N=8192$: Standard Attention cần $> 32$ GB bộ nhớ $\implies$ \textbf{CUDA OOM}. FlashAttention chỉ cần \textbf{370.3 MB VRAM} ($< 10\%$ card 4GB)!
-      \end{itemize}
-    \end{exampleblock}
-  \end{column}
-\end{columns}
+    \begin{column}{0.54\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{runtime_chart.png}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------------------
+% SLIDE 11: PHÂN TÍCH TIÊU THỤ BỘ NHỚ (MEMORY FOOTPRINT)
+% ------------------------------------------------------------------------------
+\begin{frame}{Phân tích Bộ nhớ: Tuyến tính $\mathcal{O}(N)$ \& Hóa giải Rào cản OOM}
+  \vspace{-0.3em}
+  {\fontsize{9.5pt}{12pt}\selectfont \color{MutedText}Xóa bỏ hoàn toàn ma trận $N \times N$ giúp giải phóng bộ nhớ và cho phép mở rộng ngữ cảnh không giới hạn.}
+  \vspace{0.2em}
+
+  \begin{columns}[T]
+    \begin{column}{0.44\textwidth}
+      \begin{tikzpicture}
+        \node[draw=CardBorder, fill=CardBg, rounded corners=6pt, inner sep=7pt, text width=0.92\textwidth] {
+          \textbf{\fontsize{8.5pt}{10.5pt}\selectfont So sánh Độ dốc Tăng trưởng:}\\[3pt]
+          \fontsize{7.5pt}{9.5pt}\selectfont
+          \begin{itemize}\setlength{\itemsep}{2.5pt}
+            \item \textbf{Standard Attention $\mathcal{O}(N^2)$ (Đường đỏ)}:
+            Bùng nổ dạng parabol. Tại $N=4096$ ngốn tới \textbf{8,368 MB} VRAM, và tại $N=8192$ đòi hỏi $>32$ GB $\implies$ \textbf{CUDA OOM crash}!
+            \item \textbf{FlashAttention $\mathcal{O}(N)$ (Đường xanh)}:
+            Duy trì đường thẳng tuyến tính hoàn hảo. Tại $N=4096$ chỉ tốn \textbf{193.3 MB} (tiết kiệm 43.3$\times$).
+            \item Tại $N=8192$, FlashAttention chỉ dùng \textbf{370.3 MB VRAM} ($<10\%$ dung lượng card 4GB)!
+          \end{itemize}
+        };
+      \end{tikzpicture}
+    \end{column}
+
+    \begin{column}{0.54\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{memory_chart.png}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 % ------------------------------------------------------------------------------
 % SLIDE 12: BỨC TRANH TIẾN HÓA (FA1 ĐẾN FA4)
 % ------------------------------------------------------------------------------
-\begin{frame}{11. Bức tranh Tiến hóa: Từ FlashAttention-1 đến FA-2, FA-3 và FA-4}
-\begin{center}
-\scriptsize
-\setlength{\tabcolsep}{3.5pt}
-\renewcommand{\arraystretch}{1.1}
-\begin{tabular}{lcccc}
-\toprule
-\textbf{Đặc tính So sánh} & \textbf{FlashAttention-1} & \textbf{FlashAttention-2} & \textbf{FlashAttention-3} & \textbf{FlashAttention-4} \\
-\midrule
-Năm công bố & 2022 (NeurIPS) & 2023 (ICLR) & 2024 & Đang phát triển \\
-Tác giả chính & Tri Dao et al. & Tri Dao & Tri Dao et al. & Open Source / Meta \\
-Vòng lặp ngoài & Khối $K, V$ & \textbf{Khối $Q$} & Khối $Q$ & Warp Specialized \\
-Chiều song song & Batch, Head & \textbf{Batch, Head, SeqLen} & Batch, Head, SeqLen & Asymmetric Tiled \\
-Kỹ thuật then chốt & Tiling, Online Softmax & Warp Partitioning & \textbf{TMA, WGMMA, FP8} & CuTe-DSL, Multi-stage \\
-Định dạng số học & FP16, BF16 & FP16, BF16 & FP16, BF16, \textbf{FP8} & FP4, FP8, FP16 \\
-Hiệu suất Peak FLOPs & $\sim 35 - 45\%$ & $\sim 55 - 73\%$ & $\sim 75 - 85\%$ & Dự kiến $> 85\%$ \\
-\bottomrule
-\end{tabular}
-\end{center}
+\section{LỘ TRÌNH TIẾN HÓA}
+\begin{frame}{Bức tranh Tiến hóa: Từ FlashAttention-1 đến FA-4}
+  \vspace{-0.3em}
+  {\fontsize{9.5pt}{12pt}\selectfont \color{MutedText}FlashAttention đã trở thành chuẩn mực công nghiệp và liên tục phát triển qua các thế hệ kiến trúc GPU.}
+  \vspace{0.3em}
 
-\vspace{-0.3em}
-\begin{columns}[T]
-  \begin{column}{0.48\textwidth}
-    \begin{block}{Cải tiến then chốt của FlashAttention-2}
-      Đảo vòng lặp ngoài duyệt theo $Q$, giữ vector tích lũy $O_i$ trong thanh ghi (registers) $\implies$ chỉ ghi HBM 1 lần duy nhất, tăng tốc $2\times$ so với FA-1!
-    \end{block}
-  \end{column}
-  \begin{column}{0.48\textwidth}
-    \begin{block}{Cải tiến phần cứng của FlashAttention-3}
-      Khai thác Tensor Memory Accelerator (TMA) và lệnh Warpgroup GEMM trên Hopper (H100), hỗ trợ định dạng FP8 độ chính xác cao.
-    \end{block}
-  \end{column}
-\end{columns}
+  \begin{center}
+  \fontsize{7pt}{9pt}\selectfont
+  \setlength{\tabcolsep}{3.5pt}
+  \renewcommand{\arraystretch}{1.06}
+  \begin{tabular}{p{2.1cm}p{3.1cm}p{3.1cm}p{3.8cm}}
+    \toprule
+    \textbf{Thế hệ} & \textbf{Kiến trúc GPU mục tiêu} & \textbf{Đột phá Kỹ thuật chính} & \textbf{Hiệu năng đạt được} \\
+    \midrule
+    \textbf{FlashAttention-1} \newline (2022) & Turing, Ampere (A100, RTX 30xx) & Tiling, Online Softmax, Recomputation ở Backward & Nhanh gấp 2--4$\times$ Standard Attention, bộ nhớ $\mathcal{O}(N)$ \\
+    \midrule
+    \textbf{FlashAttention-2} \newline (2023) & Ampere, Ada Lovelace, Hopper & Đảo ngược thứ tự vòng lặp ($Q$ ngoài, $K,V$ trong), tối ưu warp & Nhanh gấp \textbf{2$\times$ so với FA-1} (đạt $\sim 73\%$ FLOPs cực đại) \\
+    \midrule
+    \textbf{FlashAttention-3} \newline (2024) & Hopper (H100, H800) & Khai thác phần cứng mới: TMA, WGMMA, hỗ trợ số học FP8 & Nhanh gấp \textbf{1.5--2$\times$ so với FA-2} ($\sim 75\%$ đỉnh H100) \\
+    \midrule
+    \textbf{FlashAttention-4} \newline (2025--2026) & Hopper, Blackwell (B200, SM100) & Viết bằng CuTeDSL (Python), JIT compile ra PTX/CUBIN & Tối ưu hóa sâu cho kiến trúc Blackwell thế hệ mới \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
 \end{frame}
 
 % ------------------------------------------------------------------------------
-% SLIDE 13: KẾT LUẬN & ĐÓNG GÓP KHOA HỌC
+% SLIDE 13: KẾT LUẬN & BÀI HỌC THỰC TIỄN
 % ------------------------------------------------------------------------------
-\begin{frame}{12. Kết luận \& Đóng góp Khoa học}
-\begin{columns}[T]
-  \begin{column}{0.32\textwidth}
-    \begin{block}{1. Chuyển dịch Mô thức}
-      \begin{itemize}
-        \item Băng thông bộ nhớ là nút thắt thực sự của AI hiện đại.
-        \item Thiết kế thuật toán nhận biết phần cứng (\textbf{IO-Awareness}) vượt trội hơn thuần túy đếm FLOPs.
-      \end{itemize}
-    \end{block}
-  \end{column}
+\section{KẾT LUẬN}
+\begin{frame}{Kết luận \& Bài học Thực tiễn}
+  \vspace{-0.3em}
+  {\fontsize{9.5pt}{12pt}\selectfont \color{MutedText}Ba bài học quan trọng nhất rút ra từ quá trình nghiên cứu và tái lập thuật toán.}
+  \vspace{0.4em}
 
-  \begin{column}{0.32\textwidth}
-    \begin{exampleblock}{2. Tính Toán Chính xác}
-      \begin{itemize}
-        \item FlashAttention là thuật toán \textbf{Exact Attention}.
-        \item Thực nghiệm chứng minh sai số $\epsilon < 10^{-6}$, bảo toàn 100\% chất lượng mô hình không gây tổn thất.
-      \end{itemize}
-    \end{exampleblock}
-  \end{column}
+  \begin{columns}[T]
+    \begin{column}{0.31\textwidth}
+      \begin{tikzpicture}
+        \node[draw=BrandBlue!30, fill=PillBg!30, rounded corners=6pt, inner sep=7pt, text width=0.88\textwidth] {
+          \pilltag{PillBg}{\color{BrandBlue}BÀI HỌC 1}\\[3pt]
+          \textbf{\fontsize{9pt}{11pt}\selectfont IO-Aware Design}\\[2pt]
+          \fontsize{7.5pt}{9.5pt}\selectfont\color{BrandDark}
+          Trong kỷ nguyên mô hình lớn, việc thiết kế thuật toán phải \textbf{gắn liền với cấu trúc vật lý} của phần cứng GPU. Giảm di chuyển dữ liệu (Data Movement) quan trọng hơn giảm số phép tính FLOPs!
+        };
+      \end{tikzpicture}
+    \end{column}
 
-  \begin{column}{0.32\textwidth}
-    \begin{alertblock}{3. Bình dân hóa Long-Context}
-      \begin{itemize}
-        \item GPU cá nhân 4GB VRAM vẫn chạy tốt chuỗi $N=8192$ (262k tokens).
-        \item Đạt gia tốc \textbf{82.75$\times$}, tiết kiệm VRAM \textbf{43.29$\times$}, hóa giải lỗi OOM.
-      \end{itemize}
-    \end{alertblock}
-  \end{column}
-\end{columns}
+    \begin{column}{0.31\textwidth}
+      \begin{tikzpicture}
+        \node[draw=BrandEmerald!30, fill=GreenPillBg!20, rounded corners=6pt, inner sep=7pt, text width=0.88\textwidth] {
+          \pilltag{GreenPillBg}{\color{BrandEmerald}BÀI HỌC 2}\\[3pt]
+          \textbf{\fontsize{9pt}{11pt}\selectfont Recomputation}\\[2pt]
+          \fontsize{7.5pt}{9.5pt}\selectfont\color{BrandDark}
+          Tái tính toán trong SRAM (Recomputation) là chiến lược đổi FLOPs lấy băng thông cực kỳ hiệu quả: Chấp nhận tốn 15\% FLOPs để đổi lấy \textbf{43.3$\times$ dung lượng bộ nhớ} và tốc độ tăng vọt!
+        };
+      \end{tikzpicture}
+    \end{column}
 
-\vspace{0.6em}
-\begin{center}
-  \large \textbf{\color{NavyBlue}FlashAttention là nền tảng bản lề cho kỷ nguyên LLM Ngữ cảnh Siêu Dài!}
-\end{center}
+    \begin{column}{0.31\textwidth}
+      \begin{tikzpicture}
+        \node[draw=BrandAmber!30, fill=CardBg, rounded corners=6pt, inner sep=7pt, text width=0.88\textwidth] {
+          \pilltag{PillBg}{\color{BrandAmber}BÀI HỌC 3}\\[3pt]
+          \textbf{\fontsize{9pt}{11pt}\selectfont Exact Attention}\\[2pt]
+          \fontsize{7.5pt}{9.5pt}\selectfont\color{BrandDark}
+          FlashAttention là exact attention (sai số chỉ $\sim 10^{-7}$), giữ nguyên 100\% độ chính xác của Transformer, mở đường cho context length từ hàng ngàn lên \textbf{hàng triệu tokens}.
+        };
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 % ------------------------------------------------------------------------------
 % SLIDE 14: Q&A & TÀI LIỆU THAM KHẢO
 % ------------------------------------------------------------------------------
-\begin{frame}{13. Q\&A \& Tài liệu Tham khảo}
-\begin{columns}[T]
-  \begin{column}{0.55\textwidth}
-    \begin{block}{Tài liệu Tham khảo Cốt lõi}
-      \footnotesize
-      \begin{enumerate}
-        \item Dao, T., et al. (2022). \textbf{FlashAttention: Fast and memory-efficient exact attention with IO-awareness}. \textit{NeurIPS 2022}, 35, 16344--16359.
-        \item Dao, T. (2023). \textbf{FlashAttention-2: Faster attention with better parallelism and work partitioning}. \textit{ICLR 2024}.
-        \item Dao, T., et al. (2024). \textbf{FlashAttention-3: Fast and accurate attention with asynchrony and low-precision}. \textit{arXiv:2407.08608}.
-        \item Milakov, E., \& Gimelshein, N. (2018). \textbf{Online normalizer calculation for softmax}. \textit{arXiv:1805.02867}.
-      \end{enumerate}
-    \end{block}
-  \end{column}
-
-  \begin{column}{0.42\textwidth}
-    \begin{exampleblock}{Phiên Hỏi \& Đáp (Q\&A)}
-      \centering
-      \vspace{0.4em}
-      {\Large \textbf{\color{NavyBlue}Cảm ơn Quý Thầy Cô và các Bạn đã Lắng nghe!}}
-      \vspace{0.8em}
+\begin{frame}[plain]
+  \begin{tikzpicture}[remember picture,overlay]
+    \fill[BrandDark] (current page.north west) rectangle ([xshift=1.2cm]current page.south west);
+    \fill[BrandBlue] ([xshift=1.15cm]current page.north west) rectangle ([xshift=1.25cm]current page.south west);
+    
+    \node[anchor=north west, text width=0.84\paperwidth] at ([xshift=1.8cm, yshift=-0.9cm]current page.north west) {
+      \pilltag{PillBg}{\color{BrandBlue}HỎI \& ĐÁP / TÀI LIỆU THAM KHẢO}\\[8pt]
+      {\fontsize{20pt}{24pt}\selectfont \textbf{\color{BrandDark}Cảm ơn sự chú ý lắng nghe!}}\\[3pt]
+      {\fontsize{10pt}{13pt}\selectfont \color{MutedText}Xin mời Quý Thầy Cô và các bạn đặt câu hỏi thảo luận.}\\[12pt]
       
-      \textit{Xin mời đặt câu hỏi và đóng góp ý kiến thảo luận!}
-      \vspace{0.6em}
-      
-      \rule{0.8\textwidth}{0.4pt}
-      \vspace{0.4em}
-      
-      \footnotesize
-      \textbf{Kho lưu trữ mã nguồn tái lập:}\\
-      \texttt{github.com/flash-attention-study}\\
-      \texttt{docs/slides/slides.pdf}
-    \end{exampleblock}
-  \end{column}
-\end{columns}
+      \begin{tikzpicture}
+        \node[draw=CardBorder, fill=CardBg, rounded corners=6pt, inner sep=8pt, text width=0.80\paperwidth] {
+          \textbf{\fontsize{8.5pt}{10.5pt}\selectfont Tài liệu Tham khảo Nền tảng:}\\[2pt]
+          \fontsize{7.5pt}{9.5pt}\selectfont
+          \begin{enumerate}\setlength{\itemsep}{1.5pt}
+            \item Dao et al., \textit{FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness}, NeurIPS 2022.
+            \item Dao, \textit{FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning}, ICLR 2024.
+            \item Shah, Dao et al., \textit{FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision}, 2024.
+            \item Milakov \& Gimelshteyn, \textit{Online normalizer calculation for softmax}, arXiv:1805.02867, 2018.
+          \end{enumerate}
+          \vspace{2pt}
+          {\color{BrandBlue}\textbf{Kho mã nguồn Tái lập}}: \url{https://github.com/tmanhococ/FlashAttention-Reproduce.git}
+        };
+      \end{tikzpicture}
+    };
+  \end{tikzpicture}
 \end{frame}
 
 \end{document}
