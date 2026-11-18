@@ -1,0 +1,570 @@
+\documentclass[10pt,a4paper]{article}
+
+% --- Packages ---
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+
+\usepackage[a4paper, margin=2cm]{geometry}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{microtype}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{float}
+\usepackage{setspace}
+\usepackage{enumitem}
+
+\usepackage[colorlinks=true,
+            linkcolor=blue!70!black,
+            citecolor=blue!70!black,
+            urlcolor=blue!70!black]{hyperref}
+
+% --- Custom commands & settings ---
+\setstretch{1.0}
+\floatname{algorithm}{Thuật toán}
+\renewcommand{\algorithmicrequire}{\textbf{Đầu vào:}}
+\renewcommand{\algorithmicensure}{\textbf{Đầu ra:}}
+
+\definecolor{navyblue}{RGB}{16, 54, 114}
+\definecolor{darkslate}{RGB}{40, 50, 65}
+\definecolor{accentgreen}{RGB}{34, 139, 34}
+\definecolor{accentred}{RGB}{178, 34, 34}
+
+% Theorem environments
+\newtheorem{theorem}{Định lý}
+\newtheorem{lemma}{Bổ đề}
+\newtheorem{definition}{Định nghĩa}
+
+\title{\LARGE \textbf{\color{navyblue}FlashAttention: Tối ưu hóa Cơ chế Attention Nhận biết Phần cứng (IO-Awareness) và Thực nghiệm Tái lập trên GPU NVIDIA RTX 3050 Ti}\\[0.4em]
+\large \textit{Hardware-Aware Fast and Memory-Efficient Exact Attention: Theory and Empirical Reproduction}}
+
+\author{\textbf{Nhóm Nghiên cứu \& Tái lập Hệ thống Tính toán Hiệu năng Cao}\\
+Khoa Khoa học và Kỹ thuật Máy tính\\
+\texttt{\{research, reproduction\}@flashattention-study.org}}
+
+\date{\textbf{Tháng 11 Năm 2026}}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Cơ chế Self-Attention là thành phần cốt lõi của các mô hình Transformer, đặt nền móng cho cuộc cách mạng Mô hình Ngôn ngữ Lớn (LLMs) và Thị giác Máy tính hiện đại. Tuy nhiên, tính toán Attention tiêu chuẩn có độ phức tạp thời gian và không gian bộ nhớ bậc hai $O(N^2)$ theo chiều dài chuỗi đầu vào $N$. Nghiên cứu tiên phong của Tri Dao và cộng sự (NeurIPS 2022) đã chỉ ra rằng rào cản tốc độ thực sự của Attention trên phần cứng GPU hiện đại không nằm ở số lượng phép tính toán học (FLOPs), mà bị chi phối bởi băng thông đọc/ghi dữ liệu (Memory-Bound) giữa bộ nhớ tốc độ cao trên chip (SRAM) và bộ nhớ toàn cục (HBM). Bằng cách kết hợp kỹ thuật phân khối (\textit{Tiling}), tính toán Softmax trực tuyến (\textit{Online Softmax}) và tái tính toán ở lượt truyền ngược (\textit{Recomputation in Backward Pass}), thuật toán \textbf{FlashAttention-1} đã tính toán chính xác Attention mà không cần lưu trữ ma trận tương đồng $N \times N$, giảm số lượt truy cập bộ nhớ từ $\Theta(Nd + N^2)$ xuống $\Theta(N^2 d^2 M^{-1})$, trong đó $M$ là dung lượng SRAM.
+
+Báo cáo kỹ thuật này trình bày toàn diện cơ sở lý thuyết, phân tích toán học độ phức tạp I/O, và quy trình thực nghiệm tái lập độc lập thuật toán FlashAttention trên nền tảng phần cứng thương mại cá nhân NVIDIA GeForce RTX 3050 Ti Laptop GPU (4GB VRAM, kiến trúc Ampere) dưới môi trường WSL2/PyTorch. Kết quả kiểm chứng số học xác nhận thuật toán tái lập thuần PyTorch đạt sai số tuyệt đối tối đa chỉ $2.38 \times 10^{-7}$ so với Attention tiêu chuẩn, đảm bảo tính tương đương toán học hoàn hảo (Exact Attention). Kết quả đo đạc mở rộng quy mô từ $N=128$ đến $N=8192$ chứng minh FlashAttention mang lại tốc độ tăng tốc vượt bậc lên tới \textbf{82.75$\times$} tại $N=4096$, tiết kiệm bộ nhớ đỉnh VRAM \textbf{43.29$\times$} (193.3 MB so với 8368.3 MB). Đáng chú ý, tại $N=8192$, Attention tiêu chuẩn rơi vào trạng thái tràn bộ nhớ (CUDA Out of Memory - OOM), trong khi FlashAttention hoàn thành toàn bộ chu trình thuận và nghịch chỉ trong 117.50 ms với 370.3 MB VRAM. Báo cáo cũng cung cấp cái nhìn sâu sắc về lộ trình tiến hóa từ FlashAttention-1 đến FlashAttention-2, FlashAttention-3 và FlashAttention-4 trên các kiến trúc GPU thế hệ mới.
+\end{abstract}
+
+\vspace{0.5em}
+\noindent \textbf{Từ khóa:} FlashAttention, IO-Awareness, Tiling, Online Softmax, Recomputation, Memory-Bound, Transformer, LLM, GPU Architecture, RTX 3050 Ti, PyTorch.
+
+
+
+% =========================================================================
+\section{Đặt vấn đề và Giới hạn của Standard Attention}
+\label{sec:intro}
+% =========================================================================
+
+\subsection{Sự bùng nổ của Transformer và Thách thức Ngữ cảnh Dài}
+Kể từ khi kiến trúc Transformer được công bố bởi Vaswani và cộng sự \cite{vaswani2017attention}, cơ chế Self-Attention đã trở thành khối kiến trúc không thể thiếu trong lĩnh vực Xử lý Ngôn ngữ Tự nhiên (NLP), Thị giác Máy tính (Vision Transformers), và các mô hình Sinh đa phương thức (Multimodal Foundation Models). Trái tim của Transformer là phép biến đổi Scaled Dot-Product Attention:
+\begin{equation}
+\label{eq:standard_attn}
+\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d}}\right)V
+\end{equation}
+trong đó $Q, K, V \in \mathbb{R}^{N \times d}$ tương ứng là các ma trận Query, Key và Value; $N$ là chiều dài chuỗi token (Sequence Length) và $d$ là số chiều của mỗi đầu attention (Head Dimension).
+
+Trong các ứng dụng đương đại như đọc hiểu tài liệu pháp lý phức tạp, phân tích kho mã nguồn phần mềm lớn, tổng hợp sách dài hay lý luận nhiều bước, nhu cầu mở rộng ngữ cảnh $N$ từ vài ngàn token lên tới hàng chục ngàn và hàng triệu token trở nên vô cùng cấp thiết. Tuy nhiên, việc mở rộng $N$ vấp phải một rào cản tính toán nghiêm trọng: ma trận tương đồng $S = QK^T / \sqrt{d}$ và ma trận phân phối xác suất sau softmax $P = \text{softmax}(S)$ đều có kích thước $N \times N$. Khi $N$ tăng, cả khối lượng tính toán lẫn nhu cầu bộ nhớ của phép tính này đều bùng nổ theo cấp số bậc hai $O(N^2)$.
+
+\subsection{Cơ chế Phân cấp Bộ nhớ GPU và Nút thắt Băng thông (Memory Wall)}
+Trên các bộ tăng tốc tính toán đồ họa hiện đại (GPU) như NVIDIA Ampere, Hopper hay Blackwell, kiến trúc phần cứng được tổ chức theo mô hình phân cấp bộ nhớ sâu sắc (Memory Hierarchy), được mô tả trực quan trong Bảng \ref{tab:gpu_memory_hierarchy}:
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Đặc tính phân cấp bộ nhớ điển hình trên kiến trúc GPU NVIDIA}
+\label{tab:gpu_memory_hierarchy}
+\setlength{\tabcolsep}{7pt}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Cấp bộ nhớ} & \textbf{Vị trí} & \textbf{Dung lượng} & \textbf{Băng thông} & \textbf{Độ trễ} \\
+\midrule
+Thanh ghi (Registers) & On-chip (SM) & $\sim 256$ KB / SM & $\sim 30 - 50$ TB/s & $\sim 1$ chu kỳ \\
+SRAM / L1 Cache & On-chip (SM) & $\sim 100 - 228$ KB / SM & $\sim 10 - 20$ TB/s & $\sim 20 - 30$ chu kỳ \\
+Bộ nhớ đệm L2 & On-chip (Toàn GPU) & $\sim 4 - 50$ MB & $\sim 3 - 6$ TB/s & $\sim 100 - 200$ chu kỳ \\
+HBM / GDDR & Off-chip DRAM & $4 - 80$ GB & $0.2 - 3.35$ TB/s & $\sim 400 - 800$ chu kỳ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Qua Bảng \ref{tab:gpu_memory_hierarchy}, có thể nhận thấy một sự tương phản vô cùng lớn:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{On-chip SRAM}: Có tốc độ truy cập cực kỳ nhanh (băng thông đạt hàng chục TB/s, độ trễ vài chục nano-giây), nhưng dung lượng vô cùng hữu hạn (chỉ từ vài chục đến vài trăm Kilobytes cho mỗi Streaming Multiprocessor - SM).
+    \item \textbf{Off-chip HBM (High Bandwidth Memory)}: Dung lượng lớn (vài Gigabytes đến hàng chục Gigabytes), nhưng băng thông truyền tải dữ liệu thấp hơn SRAM từ 10 đến 20 lần và độ trễ cao hơn hàng chục lần.
+\end{itemize}
+
+Trong thập kỷ qua, tốc độ tính toán thô của các nhân Tensor Core (FLOPs) đã tăng trưởng theo cấp số nhân (hơn 1000$\times$), trong khi băng thông bộ nhớ DRAM chỉ tăng trưởng khiêm tốn (khoảng 30$\times$). Khoảng cách ngày càng giãn rộng này tạo nên hiện tượng \textit{Bức tường Bộ nhớ} (Memory Wall). Các thuật toán trong học sâu có thể phân thành hai nhóm:
+\begin{enumerate}
+    \item \textbf{Compute-Bound (Giới hạn tính toán)}: Thời gian thực thi bị chi phối bởi số phép tính số học, ví dụ nhân ma trận lớn (GEMM) với số chiều lớn.
+    \item \textbf{Memory-Bound (Giới hạn bộ nhớ)}: Thời gian thực thi bị chi phối bởi tốc độ truyền nạp dữ liệu vào/ra bộ nhớ HBM, ví dụ các hàm phần tử (Element-wise operations như ReLU, Dropout) và các phép chuẩn hóa (LayerNorm, Softmax).
+\end{enumerate}
+
+\subsection{Phân tích Nút thắt của Standard Attention (Algorithm 0)}
+Trong các framework học sâu tiêu chuẩn như PyTorch gốc, cơ chế Attention được triển khai tuần tự theo ba bước (gọi là Algorithm 0 trong bài báo của Dao và cộng sự \cite{dao2022flashattention}):
+\begin{enumerate}
+    \item \textbf{Tính điểm tương đồng}: Nạp $Q, K \in \mathbb{R}^{N \times d}$ từ HBM vào SRAM, thực hiện nhân ma trận để tính $S = QK^T / \sqrt{d} \in \mathbb{R}^{N \times N}$, sau đó \textbf{ghi toàn bộ ma trận $S$ trở lại HBM}.
+    \item \textbf{Tính xác suất Softmax}: Đọc ma trận $S$ từ HBM vào SRAM, tính giá trị cực đại từng dòng $m \in \mathbb{R}^N$, tính ma trận hiệu mũ và tổng chuẩn hóa $\ell \in \mathbb{R}^N$, sinh ra ma trận $P = \text{softmax}(S) \in \mathbb{R}^{N \times N}$, sau đó \textbf{ghi toàn bộ ma trận $P$ trở lại HBM}.
+    \item \textbf{Tính vector ngữ cảnh}: Đọc ma trận $P \in \mathbb{R}^{N \times N}$ và $V \in \mathbb{R}^{N \times d}$ từ HBM vào SRAM, thực hiện nhân ma trận để tính $O = PV \in \mathbb{R}^{N \times d}$, sau đó \textbf{ghi $O$ trở lại HBM}.
+\end{enumerate}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[scale=0.85, every node/.style={transform shape}]
+    % Styles
+    \tikzstyle{mem} = [draw, rectangle, fill=blue!10, text width=2.8cm, text centered, minimum height=1.2cm, rounded corners]
+    \tikzstyle{sram} = [draw, rectangle, fill=green!15, text width=2.8cm, text centered, minimum height=1.2cm, rounded corners]
+    \tikzstyle{op} = [draw, rectangle, fill=orange!20, text width=2.2cm, text centered, minimum height=0.9cm]
+    \tikzstyle{arrow} = [thick, ->, >=stealth]
+
+    % Nodes
+    \node[mem] (hbm1) at (0, 3) {\textbf{HBM (DRAM)}\\$Q, K \in \mathbb{R}^{N \times d}$};
+    \node[sram] (sram1) at (4.5, 3) {\textbf{SRAM (On-Chip)}\\Tính $S = QK^T/\sqrt{d}$};
+    \node[mem] (hbm2) at (9, 3) {\textbf{HBM (DRAM)}\\Ghi $S \in \mathbb{R}^{N \times N}$ ($O(N^2)$)};
+
+    \node[sram] (sram2) at (9, 0.5) {\textbf{SRAM (On-Chip)}\\Tính $P = \text{softmax}(S)$};
+    \node[mem] (hbm3) at (4.5, 0.5) {\textbf{HBM (DRAM)}\\Ghi $P \in \mathbb{R}^{N \times N}$ ($O(N^2)$)};
+
+    \node[sram] (sram3) at (0, 0.5) {\textbf{SRAM (On-Chip)}\\Tính $O = PV$};
+    \node[mem] (hbm4) at (0, -2) {\textbf{HBM (DRAM)}\\Ghi $O \in \mathbb{R}^{N \times d}$};
+
+    % Edges
+    \draw[arrow] (hbm1) -- node[above] {\scriptsize Đọc} (sram1);
+    \draw[arrow] (sram1) -- node[above] {\scriptsize Ghi $O(N^2)$} (hbm2);
+    \draw[arrow] (hbm2) -- node[right] {\scriptsize Đọc $O(N^2)$} (sram2);
+    \draw[arrow] (sram2) -- node[above] {\scriptsize Ghi $O(N^2)$} (hbm3);
+    \draw[arrow] (hbm3) -- node[above] {\scriptsize Đọc $O(N^2)$} (sram3);
+    \draw[arrow] (sram3) -- node[left] {\scriptsize Ghi} (hbm4);
+\end{tikzpicture}
+\caption{Luồng dữ liệu đọc/ghi ma trận trung gian kích thước $N \times N$ liên tục ra bộ nhớ HBM trong cơ chế Standard Attention (Algorithm 0), dẫn đến hiện tượng Memory-Bound trầm trọng.}
+\label{fig:standard_attn_flow}
+\end{figure}
+
+Sự luân chuyển dữ liệu qua lại này bộc lộ ba điểm yếu chí mạng:
+\begin{enumerate}
+    \item \textbf{Lãng phí băng thông bộ nhớ}: Các thao tác đọc và ghi ma trận $S$ và $P$ có kích thước $N \times N$ giữa HBM và SRAM tiêu tốn tổng cộng $\Theta(Nd + N^2)$ lượt truyền dữ liệu. Khi $N \gg d$ (ví dụ $N=4096, d=64$), số phần tử của ma trận trung gian là $N^2 \approx 16.7 \times 10^6$, lớn gấp hơn 64 lần kích thước đầu vào $Nd \approx 2.6 \times 10^5$. Thời gian chạy của toàn bộ thuật toán bị chi phối hoàn toàn bởi việc chờ dữ liệu di chuyển qua bus bộ nhớ chậm chạp của HBM thay vì tốc độ tính toán của các nhân xử lý.
+    \item \textbf{Áp lực bộ nhớ ở lượt truyền ngược (Backward Pass)}: Để tính toán gradient cho các tham số ở pha truyền ngược, đạo hàm của hàm Softmax yêu cầu sự hiện diện của toàn bộ ma trận phân phối xác suất $P$. Do đó, Standard Attention bắt buộc phải lưu giữ toàn bộ ma trận $P \in \mathbb{R}^{B \times H \times N \times N}$ trong VRAM suốt chiều thuận. Khi $N$ vượt quá vài nghìn, lượng VRAM cần thiết vượt quá dung lượng vật lý của GPU, gây ra lỗi nghiêm trọng \textbf{CUDA Out of Memory (OOM)}.
+    \item \textbf{Phân mảnh nhân tính toán (Lack of Kernel Fusion)}: Việc triển khai dưới dạng các hàm riêng biệt (`matmul`, `softmax`, `matmul`) dẫn đến việc GPU phải liên tục khởi chạy kernel (kernel launch overhead) và đồng bộ hóa ngữ cảnh.
+\end{enumerate}
+
+% =========================================================================
+\section{Cơ sở Lý thuyết và Kiến trúc FlashAttention-1}
+\label{sec:theory}
+% =========================================================================
+
+\subsection{Triết lý Nhận biết Phần cứng (IO-Awareness)}
+Để giải quyết tận gốc rào cản trên, Dao và cộng sự \cite{dao2022flashattention} đề xuất một nguyên lý thiết kế mới: \textbf{IO-Awareness} (Nhận biết chi phí đọc/ghi phần cứng). Thay vì chỉ tối ưu hóa số lượng phép tính số học (FLOPs) theo mô hình độ phức tạp truyền thống, thuật toán phải được thiết kế nhằm \textbf{cực tiểu hóa số lượt truy cập giữa HBM và SRAM}.
+
+Mục tiêu cốt lõi của FlashAttention là: Tính toán kết quả đầu ra $O = \text{Attention}(Q, K, V)$ một cách chính xác tuyệt đối (\textit{Exact Attention}, không dùng xấp xỉ sparse hay low-rank) mà \textbf{hoàn toàn không hiện thực hóa (materialize) ma trận $N \times N$ ra HBM}, cả trong chiều thuận lẫn chiều nghịch. Để hiện thực hóa mục tiêu này, FlashAttention dựa trên ba trụ cột kỹ thuật:
+\begin{enumerate}
+    \item \textbf{Tiling (Phân khối)}: Chia nhỏ ma trận đầu vào thành các khối có kích thước phù hợp để nạp vừa vặn vào bộ nhớ on-chip SRAM.
+    \item \textbf{Online Softmax}: Kỹ thuật tính toán và cập nhật chuẩn hóa Softmax từng bước mà không cần duyệt qua toàn bộ dòng trước.
+    \item \textbf{Recomputation in Backward Pass}: Tái tính toán các khối ma trận tương đồng $S$ và $P$ cục bộ ngay trong SRAM ở lượt truyền ngược, triệt tiêu nhu cầu lưu ma trận $N \times N$ trong HBM.
+\end{enumerate}
+
+\subsection{Thuật toán Online Softmax}
+Trong tính toán Softmax cổ điển (Safe Softmax), đối với một vector đầu vào $x \in \mathbb{R}^B$, nhằm tránh hiện tượng tràn số mũ (numerical overflow), giá trị cực đại của vector phải được tìm trước:
+\begin{equation}
+m(x) = \max_{1 \le i \le B} x_i, \quad \ell(x) = \sum_{i=1}^B e^{x_i - m(x)}, \quad \text{softmax}(x)_i = \frac{e^{x_i - m(x)}}{\ell(x)}
+\end{equation}
+Cách tiếp cận 3 bước này (tìm max, tính tổng số mũ, chia chuẩn hóa) đòi hỏi phải có toàn bộ vector $x$ cùng lúc, tạo thành rào cản ngăn cản việc phân khối Attention.
+
+Kỹ thuật \textbf{Online Softmax} (khởi xướng bởi Milakov \& Gimelshteyn \cite{milakov2018online} và phát triển bởi Rabe \& Staats \cite{rabe2021self}) cho phép gộp các khối liên tiếp. Giả sử vector $x$ được nối từ hai vector con $x = [x^{(1)}, x^{(2)}] \in \mathbb{R}^{2B}$. Định nghĩa các đại lượng cục bộ trên từng vector con:
+\begin{equation}
+m(x^{(1)}) = \max_{j} x^{(1)}_j, \quad \ell(x^{(1)}) = \sum_{j} e^{x^{(1)}_j - m(x^{(1)})}, \quad m(x^{(2)}) = \max_{j} x^{(2)}_j, \quad \ell(x^{(2)}) = \sum_{j} e^{x^{(2)}_j - m(x^{(2)})}
+\end{equation}
+Khi đó, giá trị cực đại toàn cục $m(x)$ và tổng số mũ toàn cục $\ell(x)$ có thể được cập nhật chính xác theo công thức đệ quy:
+\begin{align}
+m(x) &= \max\left(m(x^{(1)}), m(x^{(2)})\right) \label{eq:online_max} \\
+\ell(x) &= e^{m(x^{(1)}) - m(x)} \ell(x^{(1)}) + e^{m(x^{(2)}) - m(x)} \ell(x^{(2)}) \label{eq:online_sum}
+\end{align}
+Biểu diễn vector xác suất Softmax toàn cục trên từng thành phần:
+\begin{equation}
+\label{eq:online_softmax}
+\text{softmax}(x) = \frac{1}{\ell(x)} \left[ e^{m(x^{(1)}) - m(x)} e^{x^{(1)} - m(x^{(1)})}, \quad e^{m(x^{(2)}) - m(x)} e^{x^{(2)} - m(x^{(2)})} \right]
+\end{equation}
+
+Nhờ cơ chế điều chỉnh tỉ lệ theo độ lệch cực đại $e^{m_i - m_i^{\text{new}}}$, giá trị đầu ra tích lũy $O_i$ có thể được cập nhật liên tục khi duyệt qua từng khối của $K$ và $V$ mà không làm sai lệch kết quả số học cuối cùng.
+
+\subsection{Kỹ thuật Phân khối (Tiling) và Thuật toán FlashAttention Forward Pass}
+Cho dung lượng SRAM khả dụng trên mỗi SM là $M$ phần tử (words). Thuật toán chọn kích thước khối $B_c$ (số dòng của $K, V$) và $B_r$ (số dòng của $Q$ và $O$) sao cho:
+\begin{equation}
+B_c = \left\lceil \frac{M}{4d} \right\rceil, \quad B_r = \min\left(\left\lceil \frac{M}{4d} \right\rceil, d\right)
+\end{equation}
+Chia $Q$ thành $T_r = \lceil N / B_r \rceil$ khối con $Q_1, \dots, Q_{T_r} \in \mathbb{R}^{B_r \times d}$. Tương tự, chia $K$ và $V$ thành $T_c = \lceil N / B_c \rceil$ khối con $K_1, \dots, K_{T_c}$ và $V_1, \dots, V_{T_c} \in \mathbb{R}^{B_c \times d}$.
+
+Thuật toán tổ chức hai vòng lặp lồng nhau: vòng lặp ngoài duyệt qua các khối $K_j, V_j$ và vòng lặp trong duyệt qua các khối $Q_i$. Quy trình xử lý chi tiết được mô tả trong Thuật toán \ref{alg:flashattention_fwd}.
+
+\begin{algorithm}[htbp]
+\small
+\caption{FlashAttention-1 Forward Pass (Thuật toán Chiều thuận)}
+\label{alg:flashattention_fwd}
+\begin{algorithmic}[1]
+\Require Ma trận $Q, K, V \in \mathbb{R}^{N \times d}$ trong bộ nhớ HBM, kích thước SRAM $M$.
+\Ensure Ma trận đầu ra $O \in \mathbb{R}^{N \times d}$ trong HBM, vector chuẩn hóa $L \in \mathbb{R}^N$ trong HBM.
+\State Thiết lập kích thước khối $B_c = \lceil M / 4d \rceil, B_r = \min(\lceil M / 4d \rceil, d)$.
+\State Khởi tạo $O = (0)_{N \times d} \in \mathbb{R}^{N \times d}$, $\ell = (0)_N \in \mathbb{R}^N$, $m = (-\infty)_N \in \mathbb{R}^N$ trong HBM.
+\State Phân hoạch $Q$ thành $T_r = \lceil N / B_r \rceil$ khối $Q_1, \dots, Q_{T_r} \in \mathbb{R}^{B_r \times d}$.
+\State Phân hoạch $K, V$ thành $T_c = \lceil N / B_c \rceil$ khối $K_1, \dots, K_{T_c} \in \mathbb{R}^{B_c \times d}$ và $V_1, \dots, V_{T_c} \in \mathbb{R}^{B_c \times d}$.
+\State Phân hoạch $O, \ell, m$ thành các khối con $O_i \in \mathbb{R}^{B_r \times d}$, $\ell_i \in \mathbb{R}^{B_r}$, $m_i \in \mathbb{R}^{B_r}$ tương ứng.
+\For{$j = 1$ \textbf{to} $T_c$} \Comment{Vòng lặp ngoài duyệt qua các khối Key và Value}
+    \State Nạp $K_j, V_j$ từ HBM vào SRAM.
+    \For{$i = 1$ \textbf{to} $T_r$} \Comment{Vòng lặp trong duyệt qua các khối Query}
+        \State Nạp $Q_i, O_i, \ell_i, m_i$ từ HBM vào SRAM.
+        \State Tính ma trận tương đồng trên chip: $S_{ij} = \frac{1}{\sqrt{d}} Q_i K_j^T \in \mathbb{R}^{B_r \times B_c}$.
+        \State Tính cực đại dòng cục bộ: $\tilde{m}_{ij} = \text{rowmax}(S_{ij}) \in \mathbb{R}^{B_r}$.
+        \State Tính số mũ chuẩn hóa: $\tilde{P}_{ij} = \exp(S_{ij} - \tilde{m}_{ij}) \in \mathbb{R}^{B_r \times B_c}$.
+        \State Tính tổng dòng cục bộ: $\tilde{\ell}_{ij} = \text{rowsum}(\tilde{P}_{ij}) \in \mathbb{R}^{B_r}$.
+        \State Cập nhật cực đại tích lũy: $m_i^{\text{new}} = \max(m_i, \tilde{m}_{ij}) \in \mathbb{R}^{B_r}$.
+        \State Cập nhật tổng chuẩn hóa: $\ell_i^{\text{new}} = e^{m_i - m_i^{\text{new}}} \ell_i + e^{\tilde{m}_{ij} - m_i^{\text{new}}} \tilde{\ell}_{ij} \in \mathbb{R}^{B_r}$.
+        \State Cập nhật vector đầu ra tích lũy $O_i$:
+        \State \quad $O_i \gets \text{diag}(\ell_i^{\text{new}})^{-1} \left( \text{diag}(\ell_i) e^{m_i - m_i^{\text{new}}} O_i + e^{\tilde{m}_{ij} - m_i^{\text{new}}} \tilde{P}_{ij} V_j \right)$.
+        \State Gán $m_i \gets m_i^{\text{new}}$ và $\ell_i \gets \ell_i^{\text{new}}$.
+        \State Ghi $O_i, \ell_i, m_i$ từ SRAM trở lại HBM.
+    \EndFor
+\EndFor
+\State Tính $L_i = m_i + \log(\ell_i)$ cho toàn bộ chuỗi $N$ phần tử và lưu vào HBM.
+\State \Return $O, L$.
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Cơ chế Tái tính toán ở Chiều nghịch (Recomputation in Backward Pass)}
+Trong quá trình lan truyền ngược (Backward Pass), để tính gradient $\nabla_Q, \nabla_K, \nabla_V$, Standard Attention yêu cầu ma trận phân phối xác suất $P \in \mathbb{R}^{N \times N}$. Vì FlashAttention không lưu ma trận $P$ trong HBM, thuật toán áp dụng cơ chế \textbf{Recomputation}:
+\begin{enumerate}
+    \item Chỉ lưu trữ hai tensor có kích thước nhỏ $O(N)$ trong HBM sau pha thuận: đầu ra $O \in \mathbb{R}^{N \times d}$ và vector log-sum-exp $L = m + \log \ell \in \mathbb{R}^N$.
+    \item Trong pha nghịch, khi xử lý cặp khối $(Q_i, K_j, V_j)$, khối tương đồng $S_{ij} = \frac{1}{\sqrt{d}} Q_i K_j^T$ được \textbf{tính lại trực tiếp trong SRAM}.
+    \item Khối xác suất $P_{ij}$ được tái lập ngay lập tức mà không cần bất kỳ thao tác đọc HBM nào:
+    \begin{equation}
+    P_{ij} = \exp\left(S_{ij} - L_i\right) \in \mathbb{R}^{B_r \times B_c}
+    \end{equation}
+    \item Gradient được tính toán và tích lũy trực tiếp trong SRAM theo các công thức vi tích phân ma trận:
+    \begin{align}
+    D_i &= \text{rowsum}(dO_i \circ O_i) \in \mathbb{R}^{B_r} \\
+    dP_{ij} &= dO_i V_j^T \in \mathbb{R}^{B_r \times B_c} \\
+    dS_{ij} &= P_{ij} \circ (dP_{ij} - D_i) \in \mathbb{R}^{B_r \times B_c} \\
+    dQ_i &\mathrel{+}= \frac{1}{\sqrt{d}} dS_{ij} K_j, \quad dK_j \mathrel{+}= \frac{1}{\sqrt{d}} dS_{ij}^T Q_i, \quad dV_j \mathrel{+}= P_{ij}^T dO_i
+    \end{align}
+    trong đó ký hiệu $\circ$ thể hiện tích Hadamard (element-wise product).
+\end{enumerate}
+
+\paragraph{Đánh đổi tính toán (FLOPs vs IO Tradeoff):} Quá trình này làm tăng số phép tính số học (thêm khoảng $2N^2 d$ FLOPs để tính lại $S_{ij}$ ở backward pass). Tuy nhiên, trên phần cứng hiện đại với Tensor Cores tốc độ cực cao, chi phí tính thêm FLOPs này hoàn toàn bị lấn át bởi lợi ích to lớn từ việc \textbf{cắt giảm hàng gigabytes dữ liệu phải đọc/ghi qua bus HBM}. Kết quả thực nghiệm cho thấy backward pass của FlashAttention vẫn chạy nhanh hơn đáng kể so với Standard Attention.
+
+\subsection{Chứng minh Phân tích Độ phức tạp I/O (IO Complexity Analysis)}
+\label{subsec:iocomplexity}
+
+\begin{theorem}[Độ phức tạp I/O của FlashAttention]
+\label{thm:io_complexity}
+Cho kích thước chuỗi là $N$, số chiều vector đặc trưng là $d$, và dung lượng bộ nhớ SRAM là $M$, với điều kiện $d \le M \le Nd$:
+\begin{enumerate}
+    \item Cơ chế Standard Attention (Algorithm 0) đòi hỏi số lượng truy cập HBM là:
+    \begin{equation}
+    \text{IO}_{\text{standard}} = \Theta\left(Nd + N^2\right)
+    \end{equation}
+    \item Thuật toán FlashAttention-1 đòi hỏi số lượng truy cập HBM là:
+    \begin{equation}
+    \text{IO}_{\text{flash}} = \Theta\left(\frac{N^2 d^2}{M}\right)
+    \end{equation}
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+1. \textit{Standard Attention}:
+\begin{itemize}
+    \item Bước 1 ($S = QK^T / \sqrt{d}$): Nạp $Q, K$ từ HBM tốn $2Nd$ lượt đọc; ghi $S \in \mathbb{R}^{N \times N}$ ra HBM tốn $N^2$ lượt ghi.
+    \item Bước 2 ($P = \text{softmax}(S)$): Đọc $S$ từ HBM tốn $N^2$ lượt đọc; ghi $P \in \mathbb{R}^{N \times N}$ ra HBM tốn $N^2$ lượt ghi.
+    \item Bước 3 ($O = PV$): Đọc $P$ tốn $N^2$ lượt đọc; đọc $V$ tốn $Nd$ lượt đọc; ghi $O \in \mathbb{R}^{N \times d}$ tốn $Nd$ lượt ghi.
+    \item Tổng số lượt truy cập HBM là $4Nd + 3N^2 = \Theta(Nd + N^2)$.
+\end{itemize}
+
+2. \textit{FlashAttention}:
+\begin{itemize}
+    \item Chọn $B_c = \Theta(M/d)$ và $B_r = \Theta(M/d)$. Số khối tương ứng là $T_c = \lceil N / B_c \rceil = \Theta(\frac{Nd}{M})$ và $T_r = \lceil N / B_r \rceil = \Theta(\frac{Nd}{M})$.
+    \item Vòng lặp ngoài lặp $T_c$ lần: Mỗi lần lặp nạp $K_j, V_j$ có kích thước $2 B_c d$. Tổng số lượt đọc $K, V$ qua toàn bộ thuật toán là:
+    \begin{equation}
+    T_c \times 2 B_c d = \frac{N}{B_c} \times 2 B_c d = 2Nd
+    \end{equation}
+    \item Trong mỗi vòng lặp ngoài, vòng lặp trong lặp $T_r$ lần: Mỗi lần nạp $Q_i$ ($B_r d$), đọc/ghi $O_i$ ($2 B_r d$), và các vector $\ell_i, m_i$. Tổng số lượt đọc $Q$ và đọc/ghi $O$ trong mỗi vòng lặp ngoài là $3 \sum_{i=1}^{T_r} B_r d = 3Nd$.
+    \item Do có $T_c$ vòng lặp ngoài, tổng lượt đọc/ghi cho $Q$ và $O$ là:
+    \begin{equation}
+    T_c \times 3Nd = \left\lceil \frac{N}{B_c} \right\rceil \times 3Nd = \Theta\left(\frac{Nd}{M/d} \times Nd\right) = \Theta\left(\frac{N^2 d^2}{M}\right)
+    \end{equation}
+    \item Tổng số lượt truy cập HBM là $2Nd + \Theta\left(\frac{N^2 d^2}{M}\right) = \Theta\left(\frac{N^2 d^2}{M}\right)$ (vì giả thiết $M \le Nd$).
+\end{itemize}
+\end{proof}
+
+\paragraph{Hệ quả về tỉ số giảm tải I/O:} Tỉ lệ cải thiện lưu lượng I/O giữa Standard Attention và FlashAttention xấp xỉ bằng:
+\begin{equation}
+\label{eq:io_speedup_ratio}
+\frac{\text{IO}_{\text{standard}}}{\text{IO}_{\text{flash}}} \approx \frac{N^2}{\frac{N^2 d^2}{M}} = \frac{M}{d^2}
+\end{equation}
+Trên phần cứng thực tế, kích thước SRAM của một SM điển hình là $M \approx 100\text{ KB} \approx 50{,}000$ phần tử FP16, trong khi với $d = 64$, ta có $d^2 = 4{,}096$. Tỉ số $M / d^2 \approx 12.2$, nghĩa là FlashAttention cắt giảm lưu lượng truy cập bộ nhớ HBM hơn một bậc độ lớn (hơn 10 lần) so với phương pháp chuẩn.
+
+% =========================================================================
+\section{Thiết lập Môi trường và Quy trình Tái lập}
+\label{sec:methodology}
+% =========================================================================
+
+\subsection{Cấu hình Phần cứng và Phần mềm}
+Để đảm bảo tính khách quan và kiểm chứng khả năng áp dụng của FlashAttention trên các hệ thống tính toán biên và môi trường phát triển cá nhân, chúng tôi thiết lập thực nghiệm trên cấu hình GPU thương mại dòng phổ thông (Laptop GPU) thay vì các cụm siêu máy chủ A100/H100 đắt đỏ. Chi tiết cấu hình được trình bày trong Bảng \ref{tab:hardware_specs}:
+
+\begin{table}[htbp]
+\centering
+\caption{Thông số môi trường phần cứng và phần mềm thực nghiệm}
+\label{tab:hardware_specs}
+\begin{tabular}{ll}
+\toprule
+\textbf{Thành phần} & \textbf{Chi tiết cấu hình} \\
+\midrule
+Bộ xử lý đồ họa (GPU) & NVIDIA GeForce RTX 3050 Ti Laptop GPU \\
+Kiến trúc vi xử lý & NVIDIA Ampere (Compute Capability sm\_86) \\
+Số nhân CUDA / SM & 2560 nhân CUDA / 20 Streaming Multiprocessors (SM) \\
+Dung lượng bộ nhớ VRAM & 4096 MB (4 GB) GDDR6 \\
+Băng thông bộ nhớ lý thuyết & $\sim 192$ GB/s (128-bit bus width) \\
+Hệ điều hành Host & Microsoft Windows 11 Home 64-bit \\
+Hệ điều hành Thực thi & Ubuntu 22.04 LTS qua Windows Subsystem for Linux (WSL2) \\
+Môi trường Python & Python 3.10.12 \\
+Thư viện Tính toán & PyTorch 2.1.2+cu121 với CUDA Runtime 12.1 \\
+Độ chính xác số học & FP16 (Half Precision - \texttt{torch.float16}) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Giai đoạn 1: Kiểm chứng Số học Thuần PyTorch (Algorithm 1 Verification)}
+Trước khi tiến hành đo đạc hiệu năng tốc độ, một yêu cầu khoa học tiên quyết là phải chứng minh tính chính xác tuyệt đối của thuật toán FlashAttention-1. Chúng tôi xây dựng mô đun kiểm chứng độc lập \texttt{reproduce\_fa1\_algo1.py} mô phỏng chuẩn xác từng bước phân khối của Thuật toán \ref{alg:flashattention_fwd} thuần túy bằng PyTorch CPU/GPU operations.
+
+Thiết lập kiểm thử:
+\begin{itemize}
+    \item Chiều dài chuỗi: $N = 512$, số chiều vector: $d = 64$.
+    \item Kích thước khối mô phỏng SRAM: $B_r = 64, B_c = 64$.
+    \item Dữ liệu đầu vào: Các ma trận ngẫu nhiên $Q, K, V \sim \mathcal{N}(0, 1)$ với hạt giống ngẫu nhiên cố định (\texttt{seed = 42}).
+    \item Tiêu chuẩn sai số: Sai số tuyệt đối tối đa giữa ma trận đầu ra của Standard Attention $O_{\text{std}}$ và FlashAttention $O_{\text{fa1}}$:
+    \begin{equation}
+    \epsilon_{\max} = \max_{i, j} |O_{\text{std}}[i, j] - O_{\text{fa1}}[i, j]|
+    \end{equation}
+\end{itemize}
+
+Kết quả thực nghiệm xác nhận:
+\begin{equation}
+\epsilon_{\max} = 2.38418579 \times 10^{-7} \ll 10^{-5}
+\end{equation}
+Sai số này hoàn toàn nằm trong giới hạn sai số làm tròn số học dấu phẩy động (float32 precision rounding error) của các phép nhân ma trận. Điều này minh chứng rằng thuật toán Tiling kết hợp Online Softmax tái tạo chính xác 100\% kết quả toán học của cơ chế Attention cổ điển, không làm suy giảm chất lượng mô hình.
+
+\subsection{Giai đoạn 2: Kịch bản Đo đạc Mở rộng Quy mô (Benchmark Setup)}
+Để đánh giá toàn diện hiệu năng theo chiều dài chuỗi $N \in \{128, 256, 512, 1024, 2048, 4096, 8192\}$, chúng tôi triển khai kịch bản kiểm chuẩn tự động hóa cao trong kịch bản \texttt{benchmark\_reproduce\_fa1.py}:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Cấu hình siêu tham số}: Batch size $B = 4$, số đầu attention $H = 8$, số chiều $d = 64$ (tương ứng với cấu hình chuẩn của các mô hình Transformer như BERT-Base, GPT-2). Tại $N = 8192$, tổng số token được xử lý đồng thời trong một lượt là $4 \times 8 \times 8192 = 262{,}144$ tokens.
+    \item \textbf{Phương pháp đo lường chu kỳ (Forward + Backward)}: Sử dụng cơ chế ngữ cảnh \texttt{\small sdpa\_kernel} để kích hoạt có kiểm soát hai backend đối sánh:
+    \begin{enumerate}
+        \item \texttt{SDPBackend.MATH}: Đại diện cho Standard Attention thực thi tuần tự các phép toán rời rạc qua HBM.
+        \item \texttt{SDPBackend.FLASH\_ATTENTION}: Nhân kernel CUDA FlashAttention đã được tối ưu hóa ở mức phần cứng.
+    \end{enumerate}
+    \item \textbf{Quy trình đo độ trễ (Latency)}: Thực hiện 10 lần lặp khởi động (warmup) để loại bỏ chi phí biên dịch JIT và định tuyến bộ nhớ, sau đó lấy trung bình chính xác qua 30 lần lặp đo đạc chính thức bằng các sự kiện phần cứng \texttt{torch.cuda.Event(enable\_timing=True)} kèm theo \texttt{torch.cuda.synchronize()}.
+    \item \textbf{Quy trình đo bộ nhớ đỉnh (Peak Memory)}: Trước mỗi lần đo, bộ nhớ cache của PyTorch được giải phóng hoàn toàn qua \texttt{\small empty\_cache()} và bộ đếm bộ nhớ được tái lập qua \texttt{\small reset\_peak\_memory\_stats()}. Mức tiêu thụ bộ nhớ đỉnh được ghi nhận thông qua \texttt{\small max\_memory\_allocated()} theo đơn vị Megabytes (MB).
+\end{itemize}
+
+% =========================================================================
+\section{Kết quả Thực nghiệm và Phân tích Chuyên sâu}
+\label{sec:results}
+% =========================================================================
+
+\subsection{Bảng Tổng hợp Số liệu Benchmark Toàn diện}
+Toàn bộ số liệu đo đạc thực nghiệm trên phần cứng NVIDIA RTX 3050 Ti Laptop GPU được tổng hợp trong Bảng \ref{tab:benchmark_results}.
+
+\begin{table}[htbp]
+\centering
+\caption{Kết quả đo đạc độ trễ và bộ nhớ đỉnh (Forward + Backward) giữa Standard Attention (Math) và FlashAttention trên GPU NVIDIA RTX 3050 Ti (Batch size = 4, Heads = 8, $d = 64$, FP16)}
+\label{tab:benchmark_results}
+\small
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{rcccccc}
+\toprule
+\multirow{2}{*}{\textbf{SeqLen ($N$)}} & \multicolumn{3}{c}{\textbf{Thời gian thực thi (Latency)}} & \multicolumn{3}{c}{\textbf{Bộ nhớ đỉnh VRAM (Peak Memory)}} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+ & \textbf{Math (ms)} & \textbf{Flash (ms)} & \textbf{Speedup} & \textbf{Math (MB)} & \textbf{Flash (MB)} & \textbf{Tiết kiệm} \\
+\midrule
+128  & 5.21    & 0.99   & \textbf{5.26$\times$}  & 29.3   & 21.8  & 1.34$\times$ \\
+256  & 2.05    & 0.78   & \textbf{2.62$\times$}  & 58.3   & 27.3  & 2.14$\times$ \\
+512  & 5.20    & 0.68   & \textbf{7.64$\times$}  & 164.3  & 38.4  & 4.28$\times$ \\
+1024 & 18.94   & 2.18   & \textbf{8.69$\times$}  & 568.3  & 60.5  & 9.39$\times$ \\
+2048 & 73.24   & 7.75   & \textbf{9.45$\times$}  & 2144.3 & 104.8 & 20.46$\times$ \\
+4096 & 2496.00 & 30.16  & \textbf{82.75$\times$} & 8368.3 & 193.3 & \textbf{43.29$\times$} \\
+8192 & \textbf{OOM} & 117.50 & \textbf{N/A (OOM)}     & \textbf{OOM}   & 370.3 & \textbf{$\infty$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Phân tích Biểu đồ Thực nghiệm Tái lập (Figure 3)}
+Để tái hiện chính xác đồ thị kinh điển Figure 3 trong bài báo gốc của Dao và cộng sự \cite{dao2022flashattention}, chúng tôi đã biểu diễn mối quan hệ giữa chiều dài chuỗi $N$ với Thời gian thực thi (Runtime) và Bộ nhớ tiêu thụ (Memory Footprint) trong Hình \ref{fig:reproduction_figure3}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\linewidth]{figure3_reproduction.png}
+\caption{Tái lập thực nghiệm Figure 3 từ bài báo FlashAttention trên GPU NVIDIA RTX 3050 Ti: (Trái) Thời gian thực thi cả 2 chiều Forward + Backward theo thang log-log; (Phải) Dung lượng bộ nhớ VRAM tiêu thụ đỉnh. Standard Attention bùng nổ bậc hai dẫn đến OOM, trong khi FlashAttention tăng trưởng tuyến tính và đạt gia tốc tới 82.75$\times$.}
+\label{fig:reproduction_figure3}
+\end{figure}
+
+Từ Hình \ref{fig:reproduction_figure3} và Bảng \ref{tab:benchmark_results}, chúng tôi rút ra ba quan sát then chốt:
+
+\subsubsection{1. Điểm dị thường ở chuỗi ngắn (\texorpdfstring{$N \le 512$}{N <= 512})}
+Tại $N = 128$, thời gian thực thi của Standard Attention là 5.21 ms, cao hơn mức 2.05 ms tại $N = 256$. Đây là một hiện tượng phần cứng điển hình: ở kích thước dữ liệu quá nhỏ, chi phí khởi chạy kernel rời rạc (kernel launch overhead) và sự thiếu hụt độ đầy warp (warp under-utilization) chi phối thời gian thực thi. 
+Trong khi đó, FlashAttention duy trì thời gian cực thấp và ổn định ($0.99 \to 0.78 \to 0.68$ ms), chứng minh rằng kỹ thuật \textbf{Kernel Fusion} của FlashAttention đã triệt tiêu hoàn toàn chi phí khởi chạy kernel trung gian.
+
+\subsubsection{2. Điểm sụp đổ hiệu năng (Performance Cliff) tại \texorpdfstring{$N = 4096$}{N = 4096}}
+Khi tăng kích thước chuỗi từ $N = 2048$ lên $N = 4096$:
+\begin{itemize}
+    \item Độ trễ của Standard Attention tăng vọt từ 73.24 ms lên \textbf{2496.00 ms} (tăng tới 34.08 lần khi kích thước chỉ tăng gấp đôi).
+    \item Mức tiêu thụ VRAM của Standard Attention đạt \textbf{8368.3 MB} ($\sim 8.17$ GB), vượt xa dung lượng vật lý 4 GB của card đồ họa RTX 3050 Ti.
+\end{itemize}
+Nguyên nhân của hiện tượng này là do hệ thống driver NVIDIA và cơ chế Windows Subsystem for Linux (WSL2) đã tự động kích hoạt tính năng \textit{Unified Virtual Memory / Host Memory Paging} (chuyển vùng nhớ quá tải sang RAM hệ thống của máy tính chủ thông qua bus PCIe). Băng thông PCIe ($\sim 16 - 32$ GB/s) chậm hơn hàng chục lần so với VRAM GDDR6, gây ra hiện tượng sụp đổ hiệu năng nghiêm trọng và biến thời gian xử lý thành hàng giây.
+
+Ngược lại, FlashAttention chỉ tiêu tốn \textbf{193.3 MB VRAM} và hoàn thành toàn bộ chu trình tính toán trong \textbf{30.16 ms}. Nhờ đó, FlashAttention đạt tốc độ tăng tốc phi thường:
+\begin{equation}
+\text{Speedup}_{N=4096} = \frac{2496.00\text{ ms}}{30.16\text{ ms}} = \mathbf{82.75\times}
+\end{equation}
+đồng thời giảm nhu cầu bộ nhớ tới \textbf{43.29 lần}.
+
+\subsubsection{3. Giới hạn OOM tại \texorpdfstring{$N = 8192$}{N = 8192}}
+Tại $N = 8192$, ma trận $P$ và các tensor trung gian ở Standard Attention đòi hỏi vượt quá 16 GB bộ nhớ. Cơ chế phân bổ bộ nhớ của PyTorch lập tức phát sinh lỗi ngoại lệ \texttt{torch.cuda.OutOfMemoryError}, khiến mô hình hoàn toàn mất khả năng xử lý.
+
+Trái lại, FlashAttention chỉ tiêu tốn vỏn vẹn \textbf{370.3 MB VRAM} (tương đương chưa đầy 10\% tổng dung lượng của card RTX 3050 Ti) và thực thi trơn tru trong \textbf{117.50 ms}. Điều này chứng minh rằng FlashAttention biến các bài toán chuỗi dài trước đây vốn bất khả thi trên phần cứng cá nhân trở nên hoàn toàn khả thi và có hiệu năng vượt trội.
+
+\subsection{So sánh Tính Quy mô Không gian: \texorpdfstring{$O(N)$ so với $O(N^2)$}{O(N) so voi O(N\textasciicircum 2)}}
+Hình \ref{fig:reproduction_figure3} (phải) thể hiện rõ nét sự khác biệt giữa hai quy luật tiệm cận:
+\begin{itemize}
+    \item \textbf{Standard Attention}: Tuân theo đường cong parabol $O(N^2)$. Khi $N$ tăng gấp đôi, bộ nhớ tăng xấp xỉ 4 lần ($164.3 \to 568.3 \to 2144.3 \to 8368.3$ MB).
+    \item \textbf{FlashAttention}: Tăng trưởng hoàn toàn tuyến tính $O(N)$. Khi $N$ tăng gấp đôi, bộ nhớ chỉ tăng khoảng 1.7 - 1.9 lần ($38.4 \to 60.5 \to 104.8 \to 193.3 \to 370.3$ MB).
+\end{itemize}
+Quy luật tuyến tính này mở ra cánh cửa cho việc huấn luyện và suy luận các mô hình Transformer với độ dài ngữ cảnh mở rộng (Long-Context Transformers) mà không bị giới hạn bởi phần cứng VRAM.
+
+% =========================================================================
+\section{Thảo luận và Hướng Phát triển}
+\label{sec:discussion}
+% =========================================================================
+
+\subsection{Hạn chế của FlashAttention-1}
+Dù tạo nên bước đột phá lớn, kiến trúc nguyên bản FlashAttention-1 vẫn tồn tại một số điểm nghẽn về mặt kỹ thuật:
+\begin{enumerate}
+    \item \textbf{Mức độ song song hóa (Parallelism) giữa các SM}: FlashAttention-1 phân chia luồng công việc song song chủ yếu theo chiều Batch Size ($B$) và số đầu Attention ($H$). Khi kích thước lô nhỏ (ví dụ trong kịch bản suy luận tạo sinh từng token với $B=1$) hoặc đối với các mô hình sử dụng ít đầu Attention, số lượng khối luồng (thread blocks) không đủ để lấp đầy toàn bộ các bộ xử lý SM trên GPU hiện đại, dẫn đến việc giảm hiệu suất khai thác phần cứng (occupancy).
+    \item \textbf{Thứ tự vòng lặp (Loop Ordering)}: Việc đặt vòng lặp ngoài duyệt theo $K, V$ và vòng lặp trong duyệt theo $Q$ trong Thuật toán \ref{alg:flashattention_fwd} đòi hỏi phải ghi và đọc tích lũy ma trận $O_i$ nhiều lần giữa HBM và SRAM trong suốt quá trình chạy.
+    \item \textbf{Đồng bộ hóa trong Warp}: Việc chia sẻ dữ liệu trung gian qua Shared Memory yêu cầu nhiều rào cản đồng bộ hóa (\texttt{\_\_syncthreads()}), làm giảm thông lượng lệnh tính toán của Tensor Cores.
+\end{enumerate}
+
+\subsection{Sự Tiến hóa của Họ Thuật toán FlashAttention}
+Để vượt qua các rào cản trên, cộng đồng nghiên cứu đã liên tục phát triển và hoàn thiện các phiên bản tiếp theo:
+
+\subsubsection{1. FlashAttention-2 (Dao, 2023)}
+FlashAttention-2 giới thiệu ba cải tiến mang tính cách mạng:
+\begin{itemize}
+    \item \textbf{Đảo ngược thứ tự vòng lặp}: Đặt vòng lặp ngoài duyệt theo $Q$ và vòng lặp trong duyệt theo $K, V$. Nhờ đó, vector tích lũy $O_i$ được giữ hoàn toàn trong thanh ghi (registers) và chỉ cần ghi ra HBM đúng một lần duy nhất ở cuối pha tính toán.
+    \item \textbf{Song song hóa theo chiều Sequence Length}: Phân chia khối tính toán theo chiều dài chuỗi $N$, cho phép GPU đạt mức độ song song hóa tối đa ngay cả khi $B=1$.
+    \item \textbf{Tối ưu hóa Warp-level GEMM}: Giảm thiểu tối đa số lệnh đồng bộ hóa Shared Memory, nâng hiệu suất tính toán từ 35-40\% lên tới 73\% công suất cực đại của GPU NVIDIA A100.
+\end{itemize}
+
+\subsubsection{2. FlashAttention-3 (Dao et al., 2024)}
+FlashAttention-3 được thiết kế chuyên biệt để khai thác các tính năng phần cứng độc quyền trên kiến trúc NVIDIA Hopper (H100/H800):
+\begin{itemize}
+    \item \textbf{Bộ tăng tốc bộ nhớ Tensor (TMA - Tensor Memory Accelerator)}: Cho phép truyền nạp dữ liệu đa chiều không đồng bộ 100\% giữa HBM và Shared Memory mà hoàn toàn không tiêu tốn chu kỳ lệnh của nhân SM.
+    \item \textbf{Warpgroup GEMM (WGMMA)}: Khai thác lệnh phần cứng cho phép một nhóm gồm 4 warp (128 threads) cùng thực thi một phép tính nhân ma trận đồng thời.
+    \item \textbf{Hỗ trợ định dạng số FP8}: Tận dụng chuẩn dữ liệu 8-bit với các bộ tích lũy độ chính xác hỗn hợp (FP8 GEMM với FP32 accumulator), giúp tăng tốc độ xử lý thêm 1.5 - 2 lần so với FP16.
+\end{itemize}
+
+\subsubsection{3. FlashAttention-4 và Tương lai trên Kiến trúc Blackwell}
+Hướng phát triển hiện tại đang tập trung vào việc áp dụng ngôn ngữ trừu tượng hóa phần cứng cấp cao như NVIDIA CUTLASS / CuTe DSL nhằm tự động hóa việc tối ưu pipeline bất đồng bộ nhiều tầng (multistage asynchronous pipelines) trên các kiến trúc siêu chip như NVIDIA Blackwell (B200, GB200) và các bộ tăng tốc AI tùy biến khác.
+
+\begin{table}[htbp]
+\centering
+\caption{So sánh đặc tính tiến hóa qua các thế hệ của họ thuật toán FlashAttention}
+\label{tab:fa_evolution}
+\small
+\setlength{\tabcolsep}{4.5pt}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Đặc tính} & \textbf{FlashAttention-1} & \textbf{FlashAttention-2} & \textbf{FlashAttention-3} & \textbf{FlashAttention-4} \\
+\midrule
+Năm công bố & 2022 & 2023 & 2024 & Đang phát triển \\
+Tác giả chính & Tri Dao et al. & Tri Dao & Tri Dao et al. & Open Source / Meta \\
+Vòng lặp ngoài & $K, V$ & $Q$ & $Q$ & Warp specialized \\
+Cơ chế song song & Batch, Head & Batch, Head, Seq & Batch, Head, Seq & Asymmetric Tiled \\
+Kỹ thuật then chốt & Tiling, Online Softmax & Warp Partitioning & TMA, WGMMA, FP8 & CuTe-DSL, Blackwell \\
+Định dạng dữ liệu & FP16, BF16 & FP16, BF16 & FP16, BF16, FP8 & FP4, FP8, FP16 \\
+Hiệu suất peak FLOPs & $\sim 35 - 45\%$ & $\sim 55 - 73\%$ & $\sim 75 - 85\%$ & Dự kiến $> 85\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =========================================================================
+\section{Kết luận}
+\label{sec:conclusion}
+% =========================================================================
+Báo cáo kỹ thuật này đã trình bày một cách có hệ thống cơ sở lý thuyết, phân tích toán học độ phức tạp I/O và quy trình thực nghiệm tái lập độc lập của thuật toán FlashAttention-1 trên GPU NVIDIA GeForce RTX 3050 Ti Laptop.
+
+Các kết luận khoa học và thực tiễn cốt lõi rút ra bao gồm:
+\begin{enumerate}
+    \item \textbf{Chuyển dịch tư duy tối ưu hóa}: FlashAttention chứng minh một chân lý quan trọng trong kỹ thuật phần mềm hiệu năng cao: trên các kiến trúc bán dẫn hiện đại, việc tối ưu hóa chi phí di chuyển dữ liệu (IO-Awareness) mang lại hiệu quả vượt trội hơn nhiều so với việc thuần túy giảm số lượng phép tính toán học (FLOPs).
+    \item \textbf{Độ chính xác toán học tuyệt đối}: Thực nghiệm kiểm chứng độc lập khẳng định FlashAttention là một thuật toán tính toán chính xác (\textit{Exact Attention}) với sai số làm tròn số học chỉ $2.38 \times 10^{-7}$, hoàn toàn không đánh đổi chất lượng mô hình.
+    \item \textbf{Lợi ích thực tế phi thường trên GPU phổ thông}: Ngay cả trên một GPU cá nhân với dung lượng hạn chế 4GB VRAM, FlashAttention vẫn mang lại tốc độ gia tốc lên tới \textbf{82.75$\times$}, tiết kiệm bộ nhớ \textbf{43.29$\times$} tại chuỗi $N=4096$, và hóa giải hoàn toàn lỗi tràn bộ nhớ (OOM) tại $N=8192$.
+\end{enumerate}
+
+Nghiên cứu này không chỉ tái lập thành công một trong những công trình có tầm ảnh hưởng lớn nhất của học sâu hiện đại, mà còn mở ra nền tảng thực hành vững chắc để tiếp tục nghiên cứu và ứng dụng các kỹ thuật tăng tốc phần cứng tiên tiến cho thế hệ mô hình ngôn ngữ lớn tiếp theo.
+
+% =========================================================================
+% TÀI LIỆU THAM KHẢO
+% =========================================================================
+\begin{thebibliography}{99}
+
+\bibitem{dao2022flashattention}
+Tri Dao, Daniel Y. Fu, Stefano Ermon, Atri Rudra, and Christopher R{\'e}.
+\newblock Flashattention: Fast and memory-efficient exact attention with io-awareness.
+\newblock In \emph{Advances in Neural Information Processing Systems (NeurIPS)}, volume 35, pages 16344--16359, 2022.
+
+\bibitem{dao2023flashattention2}
+Tri Dao.
+\newblock Flashattention-2: Faster attention with better parallelism and work partitioning.
+\newblock In \emph{International Conference on Learning Representations (ICLR)}, 2024.
+
+\bibitem{dao2024flashattention3}
+Jay Shah, Ganesh Bikshandi, Ying Zhang, Vijay Thakkar, Pradeep Ramani, and Tri Dao.
+\newblock Flashattention-3: Fast and memory-efficient exact attention with asynchronous execution and fp8 on hopper gpus.
+\newblock \emph{arXiv preprint arXiv:2407.08608}, 2024.
+
+\bibitem{vaswani2017attention}
+Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, {\L}ukasz Kaiser, and Illia Polosukhin.
+\newblock Attention is all you need.
+\newblock In \emph{Advances in Neural Information Processing Systems (NeurIPS)}, volume 30, pages 5998--6008, 2017.
+
+\bibitem{milakov2018online}
+Maxim Milakov and Natalia Gimelshteyn.
+\newblock Online normalizer calculation for softmax.
+\newblock \emph{arXiv preprint arXiv:1805.02867}, 2018.
+
+\bibitem{rabe2021self}
+Markus N. Rabe and Charles Staats.
+\newblock Self-attention does not need $o(n^2)$ memory.
+\newblock \emph{arXiv preprint arXiv:2112.05682}, 2021.
+
+\bibitem{nvidia2020ampere}
+NVIDIA Corporation.
+\newblock \emph{NVIDIA Ampere GA102 Architecture Whitepaper}.
+\newblock NVIDIA Technical Report, 2020.
+
+\bibitem{williams2009roofline}
+Samuel Williams, Andrew Waterman, and David Patterson.
+\newblock Roofline: an insightful visual performance model for multicore architectures.
+\newblock \emph{Communications of the ACM}, 52(4):65--76, 2009.
+
+\end{thebibliography}
+
+\end{document}
