@@ -45,3 +45,13 @@ flash_attn_config.py
 !hopper/flash_attn_3/flash_attn_config.py
 
 .agent/
+
+# LaTeX auxiliary / intermediate files
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+*.vrb
+*.synctex.gz
